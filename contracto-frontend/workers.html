@@ -79,7 +79,7 @@
     const status = document.getElementById("fStatus").value;
     const search = document.getElementById("fSearch").value.toLowerCase();
     let rows = workers;
-    if(proj) rows = rows.filter(w=>w.projectId===proj);
+    if(proj) rows = rows.filter(w=>String(w.projectId)===String(proj));
     if(status) rows = rows.filter(w=>w.status===status);
     if(search) rows = rows.filter(w=>w.name.toLowerCase().includes(search));
     document.querySelector("#workerTable tbody").innerHTML = rows.length ? rows.map(w => `
@@ -89,6 +89,11 @@
       <td><span class="badge ${w.status==='active'?'approved':'completed'}">${tBadge(w.status)}</span></td>
       <td>${w.userId ? `<span class="badge review">${t("ttl_Enabled")}</span>` : `<span class="badge completed">${t("ttl_Record Only")}</span>`}</td>
       <td><button class="btn btn-sm" onclick="deleteWorker('${w.id}')">Delete</button></td></tr>`).join("") : `<tr><td colspan="7" style="color:var(--c-text-dim);text-align:center;padding:32px;">No workers match these filters.</td></tr>`;
+    document.getElementById("statRow").innerHTML = `
+      <div class="stat-cell"><div class="s-label">Total Workers</div><div class="s-value">${rows.length}</div></div>
+      <div class="stat-cell"><div class="s-label">Active</div><div class="s-value">${rows.filter(w=>w.status==='active').length}</div></div>
+      <div class="stat-cell"><div class="s-label">Avg. Wage Rate</div><div class="s-value">${inr(rows.length ? Math.round(rows.reduce((s,w)=>s+w.wageRate,0)/rows.length) : 0)}</div></div>
+      <div class="stat-cell"><div class="s-label">With Platform Access</div><div class="s-value">${rows.filter(w=>w.userId).length}</div></div>`;
     document.getElementById("rowCount").textContent = rows.length + " results";
   }
 
@@ -96,14 +101,9 @@
     workers = await Contralabos.workers.list();
     projects = await Contralabos.projects.list();
     const projOpts = projects.map(p=>`<option value="${p.id}">${p.name}</option>`).join("");
-    document.getElementById("fProject").innerHTML += projOpts;
+    document.getElementById("fProject").insertAdjacentHTML("beforeend", projOpts);
     document.getElementById("nwProject").innerHTML = projOpts || '<option value="">Create a project first</option>';
     document.getElementById("nwProject").disabled = projects.length === 0;
-    document.getElementById("statRow").innerHTML = `
-      <div class="stat-cell"><div class="s-label">Total Workers</div><div class="s-value">${workers.length}</div></div>
-      <div class="stat-cell"><div class="s-label">Active</div><div class="s-value">${workers.filter(w=>w.status==='active').length}</div></div>
-      <div class="stat-cell"><div class="s-label">Avg. Wage Rate</div><div class="s-value">${inr(Math.round(workers.reduce((s,w)=>s+w.wageRate,0)/workers.length))}</div></div>
-      <div class="stat-cell"><div class="s-label">With Platform Access</div><div class="s-value">${workers.filter(w=>w.userId).length}</div></div>`;
     render();
   });
   ["fProject","fStatus"].forEach(id=>document.getElementById(id).addEventListener("change",render));

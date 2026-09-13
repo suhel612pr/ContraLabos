@@ -41,7 +41,9 @@ function renderSkyline(mountId, data){
   const tip = ensureChartTooltip();
 
   mount.innerHTML = data.map((d, i) => {
-    const pct = Math.max(4, Math.min(100, (d.value / d.max) * 100));
+    const value = Number(d.value) || 0;
+    const max = Math.max(Number(d.max) || 0, value, 1);
+    const pct = Math.max(4, Math.min(100, (value / max) * 100));
     const windowCount = Math.max(2, Math.round(pct/12));
     const windows = Array.from({length: windowCount}).map(()=>"<span></span>").join("");
     return `
@@ -56,12 +58,14 @@ function renderSkyline(mountId, data){
 
   mount.querySelectorAll(".skyline-bar").forEach((bar) => {
     const d = data[bar.dataset.idx];
-    const pctRounded = Math.round((d.value / d.max) * 100);
+    const value = Number(d.value) || 0;
+    const max = Math.max(Number(d.max) || 0, value, 1);
+    const pctRounded = Math.round((value / max) * 100);
 
     function showTip(e){
       const title = d.title || d.label;
       const valueLine = `Value: <strong style="color:var(--c-gold-light);">${d.display || d.value}</strong>`;
-      const scaleLine = `Relative to: <strong>${typeof d.max === "number" ? d.max.toLocaleString("en-IN") : d.max}</strong>`;
+      const scaleLine = `Relative to: <strong>${max.toLocaleString("en-IN")}</strong>`;
       const pctLine = `Bar height: <strong>${pctRounded}%</strong> of scale`;
       tip.innerHTML = `
         <div style="font-weight:700;margin-bottom:6px;color:var(--c-gold-light);">${title}</div>
@@ -92,10 +96,13 @@ function renderSkyline(mountId, data){
     bar.addEventListener("touchstart", (e) => { showTip(e.touches[0]); }, { passive: true });
   });
 
-  document.addEventListener("touchstart", (e) => {
-    if(!e.target.closest(".skyline-bar")){
-      const t = document.getElementById("chartTooltip");
-      if(t){ t.style.opacity = "0"; t.style.display = "none"; }
-    }
-  }, { passive: true });
+  if(!window._skylineTouchHandler){
+    window._skylineTouchHandler = (e) => {
+      if(!e.target.closest(".skyline-bar")){
+        const t = document.getElementById("chartTooltip");
+        if(t){ t.style.opacity = "0"; t.style.display = "none"; }
+      }
+    };
+    document.addEventListener("touchstart", window._skylineTouchHandler, { passive: true });
+  }
 }

@@ -49,7 +49,11 @@
 <script>
   function inr(n){ return "₹" + Number(n).toLocaleString("en-IN"); }
   document.addEventListener("shell:ready", async () => {
-    const projects = await Contralabos.projects.list();
+    const allProjects = await Contralabos.projects.list();
+    const selectedProjectId = ProjectContext.get();
+    const projects = selectedProjectId
+      ? allProjects.filter(p=>String(p.id)===String(selectedProjectId))
+      : allProjects;
     const totalBudget = projects.reduce((s,p)=>s+p.budget,0);
     const totalSpent = projects.reduce((s,p)=>s+p.spent,0);
 

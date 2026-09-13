@@ -73,7 +73,8 @@
 <script>
   function inr(n){ return "₹" + Number(n).toLocaleString("en-IN"); }
   const params = new URLSearchParams(window.location.search);
-  const pid = params.get("id") || "p1";
+  const pid = params.get("id") || ProjectContext.get() || "p1";
+  ProjectContext.set(pid);
 
   document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => {
     document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));

@@ -74,7 +74,7 @@
     if(status) rows = rows.filter(p=>p.status===status);
     if(search) rows = rows.filter(p=>p.name.toLowerCase().includes(search));
     document.querySelector("#projTable tbody").innerHTML = rows.length ? rows.map(p => `
-      <tr onclick="window.location.href='project-detail.html?id=${p.id}'">
+      <tr onclick="ProjectContext.set('${p.id}'); window.location.href='project-detail.html?id=${p.id}'">
         <td class="row-link">${p.name}</td><td>${p.supervisorId || "—"}</td>
         <td>${p.startDate}</td><td>${p.progress}%</td>
         <td class="num">${inr(p.budget)}</td><td class="num">${inr(p.spent)}</td>

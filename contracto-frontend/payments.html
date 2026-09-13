@@ -25,6 +25,7 @@
 <div class="stat-row" id="statRow"></div>
 <div class="panel">
 <div class="table-toolbar">
+<select id="fProject"><option data-i18n="ttl_All Projects" value="">All Projects</option></select>
 <select id="fStatus"><option data-i18n="ttl_All Statuses" value="">All Statuses</option><option data-i18n="ttl_Paid" value="paid">Paid</option><option data-i18n="ttl_Unpaid" value="unpaid">Unpaid</option></select>
 </div>
 <div class="table-wrap">
@@ -50,12 +51,14 @@
   const projName = (id) => (projects.find(p=>p.id===id)||{}).name || id;
 
   function render(){
+    const project = document.getElementById("fProject").value;
     const status = document.getElementById("fStatus").value;
     let rows = all;
     if(user.role === "worker"){
       const myWorker = workers.find(w=>w.userId===user.id);
       rows = rows.filter(p => myWorker && p.workerId === myWorker.id);
     }
+    if(project) rows = rows.filter(p=>String(p.projectId)===String(project));
     if(status) rows = rows.filter(p=>p.status===status);
     const canMarkPaid = user.role === "accountant" || user.role === "contractor";
     document.querySelector("#payTable tbody").innerHTML = rows.map(p => `
@@ -96,8 +99,10 @@
     workers = await Contralabos.workers.list();
     projects = await Contralabos.projects.list();
     all = await Contralabos.payments.list();
+    document.getElementById("fProject").innerHTML += projects.map(p=>`<option value="${p.id}">${p.name}</option>`).join("");
     render();
   });
+  document.getElementById("fProject").addEventListener("change", render);
   document.getElementById("fStatus").addEventListener("change", render);
   document.addEventListener("languagechange:contralabos", render);
 </script>

@@ -84,23 +84,33 @@
 
   function renderDashboard(){
     if(!_user) return;
+    const selectedProjectId = ProjectContext.get();
+    const visibleProjects = selectedProjectId
+      ? _summary.projects.filter(p=>String(p.id)===String(selectedProjectId))
+      : _summary.projects;
+    const visibleRequests = selectedProjectId
+      ? _reqs.filter(r=>String(r.projectId)===String(selectedProjectId))
+      : _reqs;
+    const totalBudget = visibleProjects.reduce((sum, project)=>sum + Number(project.budget || 0), 0);
+    const totalSpent = visibleProjects.reduce((sum, project)=>sum + Number(project.spent || 0), 0);
+    const pendingRequests = visibleRequests.filter(r=>r.status!=="completed").length;
     document.getElementById("greetName").textContent = t("greeting_welcome_back") + ", " + _user.name.split(" ")[0];
     document.getElementById("dashboardSummaryText").textContent =
-      `${_summary.activeProjects} active project${_summary.activeProjects === 1 ? "" : "s"} · ${_summary.pendingRequests} request${_summary.pendingRequests === 1 ? "" : "s"} need your review`;
+      `${visibleProjects.length} active project${visibleProjects.length === 1 ? "" : "s"} · ${pendingRequests} request${pendingRequests === 1 ? "" : "s"} need your review`;
 
     document.getElementById("statRow").innerHTML = `
-      <div class="stat-cell"><div class="s-label">${t("ttl_Active Projects")}</div><div class="s-value">${_summary.activeProjects}</div></div>
-      <div class="stat-cell"><div class="s-label">${t("ttl_Total Budget")}</div><div class="s-value">${inr(_summary.totalBudget)}</div></div>
-      <div class="stat-cell"><div class="s-label">${t("ttl_Total Spent")}</div><div class="s-value">${inr(_summary.totalSpent)}</div><div class="s-delta down">${Math.round(_summary.totalSpent/_summary.totalBudget*100)}% ${t("ttl_of budget")}</div></div>
-      <div class="stat-cell"><div class="s-label">${t("ttl_Pending Requests")}</div><div class="s-value">${_summary.pendingRequests}</div></div>`;
+      <div class="stat-cell"><div class="s-label">${t("ttl_Active Projects")}</div><div class="s-value">${visibleProjects.length}</div></div>
+      <div class="stat-cell"><div class="s-label">${t("ttl_Total Budget")}</div><div class="s-value">${inr(totalBudget)}</div></div>
+      <div class="stat-cell"><div class="s-label">${t("ttl_Total Spent")}</div><div class="s-value">${inr(totalSpent)}</div><div class="s-delta down">${totalBudget ? Math.round(totalSpent/totalBudget*100) : 0}% ${t("ttl_of budget")}</div></div>
+      <div class="stat-cell"><div class="s-label">${t("ttl_Pending Requests")}</div><div class="s-value">${pendingRequests}</div></div>`;
 
-    renderSkyline("budgetSkyline", _summary.projects.map(p => ({
+    renderSkyline("budgetSkyline", visibleProjects.map(p => ({
       label: p.name.split(" ")[0], value: p.spent, max: p.budget, display: Math.round(p.spent/p.budget*100)+"%",
       title: p.name,
       detail: `${t("ttl_Spent")} ${inr(p.spent)} ${t("ttl_of")} ${inr(p.budget)} ${t("ttl_budgeted")}. ${inr(p.budget-p.spent)} ${t("ttl_remaining")}.`
     })));
 
-    document.querySelector("#projTable tbody").innerHTML = _summary.projects.map(p => `
+    document.querySelector("#projTable tbody").innerHTML = visibleProjects.map(p => `
       <tr onclick="window.location.href='project-detail.html?id=${p.id}'">
         <td class="row-link">${p.name}</td>
         <td>${p.progress}%</td>
@@ -109,7 +119,7 @@
         <td><span class="badge ${p.status==='active'?'review':'completed'}">${tBadge(p.status)}</span></td>
       </tr>`).join("");
 
-    document.querySelector("#reqTable tbody").innerHTML = _reqs.filter(r=>r.status!=="completed").slice(0,5).map(r => `
+    document.querySelector("#reqTable tbody").innerHTML = visibleRequests.filter(r=>r.status!=="completed").slice(0,5).map(r => `
       <tr onclick="window.location.href='request-detail.html?id=${r.id}'">
         <td class="row-link">${r.id}</td><td>${tBadge(r.type)}</td><td class="num">${inr(r.amount)}</td>
         <td><span class="badge ${r.status}">${tBadge(r.status)}</span></td>

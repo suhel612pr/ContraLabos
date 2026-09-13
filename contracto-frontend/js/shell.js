@@ -74,6 +74,41 @@ const NAV_BY_ROLE = {
   ]
 };
 
+const PROJECT_SELECT_IDS = new Set(["fProject", "projSelect", "rProject", "eProject", "upProject", "pProject", "rqProject", "nwProject"]);
+const ProjectContext = {
+  storageKey: "contralabos.selectedProjectId",
+  get(){
+    try{ return localStorage.getItem(this.storageKey) || ""; }catch(_err){ return ""; }
+  },
+  set(projectId){
+    try{
+      if(projectId) localStorage.setItem(this.storageKey, projectId);
+      else localStorage.removeItem(this.storageKey);
+    }catch(_err){}
+    document.dispatchEvent(new CustomEvent("projectchange:contralabos", { detail: { projectId: projectId || "" } }));
+  }
+};
+
+function syncProjectSelect(select){
+  const projectId = ProjectContext.get();
+  if(!projectId || !Array.from(select.options).some(option => option.value === projectId)) return;
+  if(select.value === projectId) return;
+  select.value = projectId;
+  select.dispatchEvent(new Event("change", { bubbles:true }));
+}
+
+function initProjectContext(){
+  document.addEventListener("change", (event) => {
+    const select = event.target;
+    if(select instanceof HTMLSelectElement && PROJECT_SELECT_IDS.has(select.id)) ProjectContext.set(select.value);
+  });
+  const syncAll = () => document.querySelectorAll("select").forEach(select => {
+    if(PROJECT_SELECT_IDS.has(select.id)) syncProjectSelect(select);
+  });
+  syncAll();
+  new MutationObserver(syncAll).observe(document.body, { childList:true, subtree:true });
+}
+
 const Shell = {
   currentUser: null,
 
@@ -208,6 +243,7 @@ const Shell = {
   async init(){
     const user = await this.guard();
     if(!user) return;
+    initProjectContext();
     this.renderSidebar(user);
     this.renderTopnav(user);
     document.dispatchEvent(new CustomEvent("shell:ready", { detail: { user } }));
