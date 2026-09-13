@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="favicon.svg" rel="icon" type="image/svg+xml"/>
+<link href="manifest.json" rel="manifest"/>
+<title>Support — Contralabos</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&amp;family=Inter:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="css/tokens.css" rel="stylesheet"/>
+<link href="css/app.css" rel="stylesheet"/>
+</head>
+<body data-page="support">
+<div class="app-shell">
+<div id="sidebar-mount"></div>
+<div class="main-col">
+<div id="topnav-mount"></div>
+<div class="breadcrumb"><a href="dashboard.html">Home</a><span class="sep">/</span><span class="current" data-i18n="nav_support">Support</span></div>
+<div class="page">
+<div class="page-head">
+<div><div class="page-title" data-i18n="title_support">Support &amp; Help Desk</div><div class="page-sub" data-i18n="sub_support">Raise a ticket, browse FAQs, or use the chat assistant (bottom right)</div></div>
+<div class="page-actions"><button class="btn btn-primary" id="newTicketBtn">+ Raise Ticket</button></div>
+</div>
+<div style="display:grid;grid-template-columns:1.3fr 1fr;gap:20px;">
+<div class="panel">
+<div class="panel-head"><h3 data-i18n="ttl_My Tickets">My Tickets</h3></div>
+<div class="table-wrap">
+<table class="data-table">
+<thead><tr><th data-i18n="ttl_Ticket">Ticket</th><th data-i18n="ttl_Subject">Subject</th><th data-i18n="ttl_Status">Status</th><th data-i18n="ttl_Updated">Updated</th></tr></thead>
+<tbody>
+<tr><td>TCK-0032</td><td>Attendance not syncing for Aug 18</td><td><span class="badge review">in progress</span></td><td>2 days ago</td></tr>
+<tr><td>TCK-0021</td><td>Unable to attach receipt to expense</td><td><span class="badge completed">resolved</span></td><td>9 days ago</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="panel">
+<div class="panel-head"><h3 data-i18n="ttl_Frequently Asked">Frequently Asked</h3></div>
+<div class="panel-body" style="font-size:12.5px;color:var(--c-text-muted);line-height:1.8;">
+<p><strong style="color:var(--c-text);">How are wages calculated?</strong><br/>From verified attendance × the worker's daily wage rate. See Wages &amp; Payments.</p>
+<p><strong style="color:var(--c-text);">How do I request a material purchase?</strong><br/>Go to Requests &amp; Status → New Request → select Material.</p>
+<p><strong style="color:var(--c-text);">Who approves payment requests?</strong><br/>Accountant marks for review; Contractor gives final approval.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/api.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/shell.js"></script>
+<script src="js/chatbot.js"></script>
+<script>
+  document.getElementById("newTicketBtn").addEventListener("click", async () => {
+    const subject = window.prompt("What do you need help with?");
+    if(!subject || !subject.trim()) return;
+    try{
+      await Contralabos.support.createTicket(subject.trim());
+      alert("Support ticket submitted.");
+      window.location.reload();
+    }catch(err){
+      alert(err.message || "Unable to submit support ticket.");
+    }
+  });
+</script>
+</body>
+</html>

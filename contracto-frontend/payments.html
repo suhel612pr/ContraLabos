@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="favicon.svg" rel="icon" type="image/svg+xml"/>
+<link href="manifest.json" rel="manifest"/>
+<title>Wages &amp; Payments — Contralabos</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&amp;family=Inter:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="css/tokens.css" rel="stylesheet"/>
+<link href="css/app.css" rel="stylesheet"/>
+</head>
+<body data-page="payments">
+<div class="app-shell">
+<div id="sidebar-mount"></div>
+<div class="main-col">
+<div id="topnav-mount"></div>
+<div class="breadcrumb"><a href="dashboard.html">Home</a><span class="sep">/</span><span class="current" data-i18n="nav_payments">Wages &amp; Payments</span></div>
+<div class="page">
+<div class="page-head">
+<div><div class="page-title" id="pageTitle">Wages &amp; Payments</div><div class="page-sub" data-i18n="sub_payments">Wages calculated from verified attendance × wage rate</div></div>
+<div class="page-actions"><button class="btn btn-primary" id="generatePaymentsBtn">Generate Current Month</button></div>
+</div>
+<div class="stat-row" id="statRow"></div>
+<div class="panel">
+<div class="table-toolbar">
+<select id="fStatus"><option data-i18n="ttl_All Statuses" value="">All Statuses</option><option data-i18n="ttl_Paid" value="paid">Paid</option><option data-i18n="ttl_Unpaid" value="unpaid">Unpaid</option></select>
+</div>
+<div class="table-wrap">
+<table class="data-table" id="payTable">
+<thead><tr><th data-i18n="ttl_Worker">Worker</th><th data-i18n="ttl_Project">Project</th><th data-i18n="ttl_Period">Period</th><th data-i18n="ttl_Amount">Amount</th><th data-i18n="ttl_Status">Status</th><th></th></tr></thead>
+<tbody></tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/api.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/shell.js"></script>
+<script src="js/chatbot.js"></script>
+<script>
+  function inr(n){ return "₹" + Number(n).toLocaleString("en-IN"); }
+  let all = [], workers = [], projects = [], user = null;
+  const workerName = (id) => (workers.find(w=>w.id===id)||{}).name || id;
+  const projName = (id) => (projects.find(p=>p.id===id)||{}).name || id;
+
+  function render(){
+    const status = document.getElementById("fStatus").value;
+    let rows = all;
+    if(user.role === "worker"){
+      const myWorker = workers.find(w=>w.userId===user.id);
+      rows = rows.filter(p => myWorker && p.workerId === myWorker.id);
+    }
+    if(status) rows = rows.filter(p=>p.status===status);
+    const canMarkPaid = user.role === "accountant" || user.role === "contractor";
+    document.querySelector("#payTable tbody").innerHTML = rows.map(p => `
+      <tr><td>${workerName(p.workerId)}</td><td>${projName(p.projectId)}</td><td>${p.period}</td>
+      <td class="num">${inr(p.amount)}</td><td><span class="badge ${p.status==='paid'?'completed':'pending'}">${tBadge(p.status)}</span></td>
+      <td>${(canMarkPaid && p.status==='unpaid') ? `<button class="btn btn-sm" onclick="markPaid('${p.id}')">${t("ttl_Mark Paid")}</button>` : ""}</td></tr>`).join("");
+
+    document.getElementById("statRow").innerHTML = `
+      <div class="stat-cell"><div class="s-label">${t("ttl_Total Accrued")}</div><div class="s-value">${inr(rows.reduce((s,p)=>s+p.amount,0))}</div></div>
+      <div class="stat-cell"><div class="s-label">${t("ttl_Paid")}</div><div class="s-value">${inr(rows.filter(p=>p.status==='paid').reduce((s,p)=>s+p.amount,0))}</div></div>
+      <div class="stat-cell"><div class="s-label">${t("ttl_Outstanding")}</div><div class="s-value">${inr(rows.filter(p=>p.status==='unpaid').reduce((s,p)=>s+p.amount,0))}</div></div>
+      <div class="stat-cell"><div class="s-label">${t("ttl_Records")}</div><div class="s-value">${rows.length}</div></div>`;
+  }
+
+  window.markPaid = async function(id){
+    try{
+      await Contralabos.payments.markPaid(id);
+      all = await Contralabos.payments.list();
+      render();
+    }catch(err){ alert(err.message || "Unable to mark payment as paid."); }
+  };
+
+  document.getElementById("generatePaymentsBtn").addEventListener("click", async () => {
+    if(!user || !["contractor", "accountant"].includes(user.role)) return;
+    const period = new Date().toISOString().slice(0, 7);
+    try{
+      await Contralabos.payments.generateForPeriod(period);
+      all = await Contralabos.payments.list();
+      render();
+      alert("Current month payments generated.");
+    }catch(err){ alert(err.message || "Unable to generate payments."); }
+  });
+
+  document.addEventListener("shell:ready", async (e) => {
+    user = e.detail.user;
+    document.getElementById("generatePaymentsBtn").style.display = ["contractor", "accountant"].includes(user.role) ? "inline-flex" : "none";
+    document.getElementById("pageTitle").textContent = user.role === "worker" ? "My Wages & Payments" : "Wages & Payments";
+    workers = await Contralabos.workers.list();
+    projects = await Contralabos.projects.list();
+    all = await Contralabos.payments.list();
+    render();
+  });
+  document.getElementById("fStatus").addEventListener("change", render);
+  document.addEventListener("languagechange:contralabos", render);
+</script>
+</body>
+</html>

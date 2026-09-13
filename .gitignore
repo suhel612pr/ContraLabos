@@ -1,0 +1,14 @@
+# Local secrets and environment files
+.env
+.env.*
+!.env.example
+
+# Dependencies and local tooling
+node_modules/
+.supabase/
+
+# Editor and operating-system files
+.vscode/
+.idea/
+Thumbs.db
+Desktop.ini

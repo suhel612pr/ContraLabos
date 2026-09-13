@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="favicon.svg" rel="icon" type="image/svg+xml"/>
+<link href="manifest.json" rel="manifest"/>
+<title>Budget — Contralabos</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&amp;family=Inter:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="css/tokens.css" rel="stylesheet"/>
+<link href="css/app.css" rel="stylesheet"/>
+</head>
+<body data-page="budget">
+<div class="app-shell">
+<div id="sidebar-mount"></div>
+<div class="main-col">
+<div id="topnav-mount"></div>
+<div class="breadcrumb"><a href="dashboard.html">Home</a><span class="sep">/</span><span class="current" data-i18n="nav_budget">Budget</span></div>
+<div class="page">
+<div class="page-head">
+<div><div class="page-title" data-i18n="title_budget">Budget</div><div class="page-sub" data-i18n="sub_budget">Budgeted vs. actual spend — derived from labour, materials, and expenses</div></div>
+<div class="page-actions"><button class="btn" data-i18n="ttl_Export / Print" onclick="window.print()">Export / Print</button></div>
+</div>
+<div class="stat-row" id="statRow"></div>
+<div class="panel">
+<div class="panel-head"><h3 data-i18n="ttl_Spend by Project">Spend by Project</h3></div>
+<div id="skylineHost"></div>
+</div>
+<div class="panel">
+<div class="panel-head"><h3 data-i18n="ttl_Project Financial Summary">Project Financial Summary</h3></div>
+<div class="table-wrap">
+<table class="data-table" id="budgetTable">
+<thead><tr><th data-i18n="ttl_Project">Project</th><th data-i18n="ttl_Budgeted">Budgeted</th><th data-i18n="ttl_Spent">Spent</th><th data-i18n="ttl_Remaining">Remaining</th><th data-i18n="ttl_% Used">% Used</th></tr></thead>
+<tbody></tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/api.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/shell.js"></script>
+<script src="js/charts.js"></script>
+<script src="js/chatbot.js"></script>
+<script>
+  function inr(n){ return "₹" + Number(n).toLocaleString("en-IN"); }
+  document.addEventListener("shell:ready", async () => {
+    const projects = await Contralabos.projects.list();
+    const totalBudget = projects.reduce((s,p)=>s+p.budget,0);
+    const totalSpent = projects.reduce((s,p)=>s+p.spent,0);
+
+    document.getElementById("statRow").innerHTML = `
+      <div class="stat-cell"><div class="s-label">Total Budget</div><div class="s-value">${inr(totalBudget)}</div></div>
+      <div class="stat-cell"><div class="s-label">Total Spent</div><div class="s-value">${inr(totalSpent)}</div></div>
+      <div class="stat-cell"><div class="s-label">Remaining</div><div class="s-value">${inr(totalBudget-totalSpent)}</div></div>
+      <div class="stat-cell"><div class="s-label">% Used (org-wide)</div><div class="s-value">${Math.round(totalSpent/totalBudget*100)}%</div></div>`;
+
+    renderSkyline("skylineHost", projects.map(p => ({
+      label:p.name.split(" ")[0], value:p.spent, max:p.budget, display:Math.round(p.spent/p.budget*100)+"%",
+      title: p.name,
+      detail: `Budgeted ${inr(p.budget)}, spent ${inr(p.spent)}, ${inr(p.budget-p.spent)} remaining.`
+    })));
+
+    document.querySelector("#budgetTable tbody").innerHTML = projects.map(p => `
+      <tr onclick="window.location.href='project-detail.html?id=${p.id}'">
+        <td class="row-link">${p.name}</td><td class="num">${inr(p.budget)}</td><td class="num">${inr(p.spent)}</td>
+        <td class="num">${inr(p.budget-p.spent)}</td><td class="num">${Math.round(p.spent/p.budget*100)}%</td></tr>`).join("");
+  });
+</script>
+</body>
+</html>

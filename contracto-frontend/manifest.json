@@ -1,0 +1,12 @@
+{
+  "name": "Contralabos — Construction Management, Simplified",
+  "short_name": "Contralabos",
+  "description": "Construction management portal: projects, workers, attendance, wages, materials, budget, and progress tracking.",
+  "start_url": "login.html",
+  "display": "standalone",
+  "background_color": "#0a0d13",
+  "theme_color": "#0a0d13",
+  "icons": [
+    { "src": "favicon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}

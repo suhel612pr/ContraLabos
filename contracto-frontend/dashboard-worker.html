@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="favicon.svg" rel="icon" type="image/svg+xml"/>
+<link href="manifest.json" rel="manifest"/>
+<title>My Dashboard — Contralabos</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&amp;family=Inter:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="css/tokens.css" rel="stylesheet"/>
+<link href="css/app.css" rel="stylesheet"/>
+</head>
+<body data-page="dashboard">
+<div class="app-shell">
+<div id="sidebar-mount"></div>
+<div class="main-col">
+<div id="topnav-mount"></div>
+<div class="breadcrumb"><a href="dashboard-worker.html">Home</a><span class="sep">/</span><span class="current" data-i18n="ttl_My Dashboard">My Dashboard</span></div>
+<div class="page">
+<div class="page-head">
+<div><div class="page-title" id="greetName">Welcome back</div><div class="page-sub" data-i18n="ttl_Kharadi Riverside Residency · 21 days present this month · ₹2,450 pending payment">Kharadi Riverside Residency · 21 days present this month · ₹2,450 pending payment</div></div>
+</div>
+<div class="stat-row">
+<div class="stat-cell"><div class="s-label" data-i18n="ttl_Days Present (Aug)">Days Present (Aug)</div><div class="s-value">21</div></div>
+<div class="stat-cell"><div class="s-label" data-i18n="ttl_Wage Rate / Day">Wage Rate / Day</div><div class="s-value">₹850</div></div>
+<div class="stat-cell"><div class="s-label" data-i18n="ttl_Accrued Wages">Accrued Wages</div><div class="s-value">₹17,850</div></div>
+<div class="stat-cell"><div class="s-label" data-i18n="ttl_Pending Payment">Pending Payment</div><div class="s-value">₹2,450</div></div>
+</div>
+<div class="contact-card" id="supervisorContact"></div>
+<div style="display:grid;grid-template-columns:1.3fr 1fr;gap:20px;">
+<div class="panel">
+<div class="panel-head"><h3 data-i18n="ttl_My Attendance — August 2026">My Attendance — August 2026</h3></div>
+<div class="table-wrap">
+<table class="data-table" id="attTable">
+<thead><tr><th data-i18n="ttl_Date">Date</th><th data-i18n="ttl_Status">Status</th><th data-i18n="ttl_Recorded By">Recorded By</th></tr></thead>
+<tbody></tbody>
+</table>
+</div>
+</div>
+<div class="panel">
+<div class="panel-head"><h3 data-i18n="ttl_Payment History">Payment History</h3></div>
+<div class="table-wrap">
+<table class="data-table">
+<thead><tr><th data-i18n="ttl_Period">Period</th><th data-i18n="ttl_Amount">Amount</th><th data-i18n="ttl_Status">Status</th></tr></thead>
+<tbody>
+<tr><td>Jul 2026</td><td class="num">₹20,800</td><td><span class="badge completed" data-i18n="ttl_Paid">paid</span></td></tr>
+<tr><td>Jun 2026</td><td class="num">₹19,550</td><td><span class="badge completed" data-i18n="ttl_Paid">paid</span></td></tr>
+<tr><td>Aug 2026 (partial)</td><td class="num">₹17,850</td><td><span class="badge pending" data-i18n="ttl_Unpaid">unpaid</span></td></tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/api.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/shell.js"></script>
+<script src="js/chatbot.js"></script>
+<script>
+  function renderGreeting(){
+    const user = window._dwUser;
+    if(user) document.getElementById("greetName").textContent = t("greeting_welcome_back") + ", " + user.name.split(" ")[0];
+    const roleLabel = document.getElementById("supRoleLabel");
+    if(roleLabel) roleLabel.textContent = t("ttl_Your Site Supervisor");
+  }
+  document.addEventListener("shell:ready", async (e) => {
+    const user = e.detail.user;
+    window._dwUser = user;
+    renderGreeting();
+    const users = await Contralabos.users.list();
+    const sup = users.find(u=>u.role==="supervisor");
+    if(sup){
+      document.getElementById("supervisorContact").innerHTML = `
+        <div class="c-avatar">${sup.avatarInitials||"S"}</div>
+        <div><div class="c-name">${sup.name}</div><div class="c-role" id="supRoleLabel">${t("ttl_Your Site Supervisor")}</div></div>
+        <div class="c-actions">
+          ${sup.phone ? `<a class="call-btn" href="tel:${sup.phone.replace(/\s/g,'')}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.9v3a2 2 0 01-2.2 2 19.8 19.8 0 01-8.6-3.1 19.5 19.5 0 01-6-6A19.8 19.8 0 012.1 4.2 2 2 0 014.1 2h3a2 2 0 012 1.7c.1 1 .3 2 .7 2.9a2 2 0 01-.4 2.1L8.1 9.9a16 16 0 006 6l1.2-1.2a2 2 0 012.1-.4c.9.4 1.9.6 2.9.7a2 2 0 011.7 2z"/></svg>Call ${sup.phone}</a>` : ""}
+        </div>`;
+    }
+    const workerRecord = (await Contralabos.workers.list()).find(w => w.userId === user.id);
+    const att = workerRecord && workerRecord.projectId
+      ? await Contralabos.attendance.listByProject(workerRecord.projectId)
+      : [];
+    window._dwAtt = att;
+    renderAttTable();
+  });
+
+  function renderAttTable(){
+    const att = window._dwAtt;
+    if(!att) return;
+    document.querySelector("#attTable tbody").innerHTML = att.map(a => `
+      <tr><td>${a.date}</td><td><span class="badge ${a.status==='present'?'approved':'pending'}">${tBadge(a.status)}</span></td><td>Sunita Pawar</td></tr>`).join("");
+  }
+
+  document.addEventListener("languagechange:contralabos", () => { renderGreeting(); renderAttTable(); });
+</script>
+</body>
+</html>
