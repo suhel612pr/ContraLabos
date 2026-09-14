@@ -250,10 +250,10 @@ table.data-table{font-size:12.5px;}
 
 /* ---------- SKYLINE CHART (building/tower-shaped bars) ---------- */
 .skyline-chart{display:flex;align-items:flex-end;gap:6px;height:160px;padding:var(--sp-4);border-top:1px solid var(--c-border-soft);}
-.skyline-bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;height:100%;justify-content:flex-end;}
+.skyline-bar-wrap{flex:1;display:grid;grid-template-rows:auto minmax(0,1fr) auto;align-items:end;height:100%;min-width:0;}
 .skyline-bar{
   width:100%;max-width:34px;background:var(--c-bg-inset);border:1px solid var(--c-border-gold);border-top:2px solid var(--c-gold);
-  position:relative;
+  position:relative;justify-self:center;align-self:end;min-height:0;
 }
 .skyline-bar .windows{
   position:absolute;inset:4px 4px auto 4px;display:grid;grid-template-columns:repeat(2,1fr);gap:3px;

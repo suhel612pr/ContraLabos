@@ -74,7 +74,7 @@
     if(cat) rows = rows.filter(x=>x.category===cat);
     document.querySelector("#expTable tbody").innerHTML = rows.length ? rows.map(x => `
       <tr><td>${x.date}</td><td>${projName(x.projectId)}</td><td>${x.category}</td><td>${x.vendor||"—"}</td>
-      <td class="num">${inr(x.amount)}</td><td>Sunita Pawar</td></tr>`).join("") : `<tr><td colspan="6" style="color:var(--c-text-dim);text-align:center;padding:32px;">No expenses match these filters.</td></tr>`;
+      <td class="num">${inr(x.amount)}</td><td>${x.recordedBy || "—"}</td></tr>`).join("") : `<tr><td colspan="6" style="color:var(--c-text-dim);text-align:center;padding:32px;">No expenses match these filters.</td></tr>`;
     document.getElementById("statRow").innerHTML = `
       <div class="stat-cell"><div class="s-label">Total (filtered)</div><div class="s-value">${inr(rows.reduce((s,x)=>s+x.amount,0))}</div></div>
       <div class="stat-cell"><div class="s-label">Entries</div><div class="s-value">${rows.length}</div></div>

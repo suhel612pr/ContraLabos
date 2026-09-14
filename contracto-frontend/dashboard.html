@@ -105,7 +105,7 @@
       <div class="stat-cell"><div class="s-label">${t("ttl_Pending Requests")}</div><div class="s-value">${pendingRequests}</div></div>`;
 
     renderSkyline("budgetSkyline", visibleProjects.map(p => ({
-      label: p.name.split(" ")[0], value: p.spent, max: p.budget, display: Math.round(p.spent/p.budget*100)+"%",
+      label: p.name.split(" ")[0], value: p.spent, max: p.budget, display: `${p.budget ? Math.round(p.spent/p.budget*100) : 0}%`,
       title: p.name,
       detail: `${t("ttl_Spent")} ${inr(p.spent)} ${t("ttl_of")} ${inr(p.budget)} ${t("ttl_budgeted")}. ${inr(p.budget-p.spent)} ${t("ttl_remaining")}.`
     })));

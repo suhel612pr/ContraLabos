@@ -41,9 +41,9 @@ function renderSkyline(mountId, data){
   const tip = ensureChartTooltip();
 
   mount.innerHTML = data.map((d, i) => {
-    const value = Number(d.value) || 0;
-    const max = Math.max(Number(d.max) || 0, value, 1);
-    const pct = Math.max(4, Math.min(100, (value / max) * 100));
+    const value = Number.isFinite(Number(d.value)) ? Number(d.value) : 0;
+    const max = Math.max(Number.isFinite(Number(d.max)) ? Number(d.max) : 0, value, 1);
+    const pct = value > 0 ? Math.max(4, Math.min(100, (value / max) * 100)) : 0;
     const windowCount = Math.max(2, Math.round(pct/12));
     const windows = Array.from({length: windowCount}).map(()=>"<span></span>").join("");
     return `
@@ -58,8 +58,8 @@ function renderSkyline(mountId, data){
 
   mount.querySelectorAll(".skyline-bar").forEach((bar) => {
     const d = data[bar.dataset.idx];
-    const value = Number(d.value) || 0;
-    const max = Math.max(Number(d.max) || 0, value, 1);
+    const value = Number.isFinite(Number(d.value)) ? Number(d.value) : 0;
+    const max = Math.max(Number.isFinite(Number(d.max)) ? Number(d.max) : 0, value, 1);
     const pctRounded = Math.round((value / max) * 100);
 
     function showTip(e){
