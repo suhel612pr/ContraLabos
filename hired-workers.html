@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="favicon.svg" rel="icon" type="image/svg+xml"/>
+<link href="manifest.json" rel="manifest"/>
+<title>Hired Workers — Contralabos</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&amp;family=Inter:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="css/tokens.css" rel="stylesheet"/>
+<link href="css/app.css" rel="stylesheet"/>
+</head>
+<body data-page="hired">
+<div class="app-shell">
+<div id="sidebar-mount"></div>
+<div class="main-col">
+<div id="topnav-mount"></div>
+<div class="breadcrumb"><a href="dashboard.html">Home</a><span class="sep">/</span><span class="current" data-i18n="nav_hired">Hired Workers</span></div>
+<div class="page">
+<div class="page-head">
+<div><div class="page-title" data-i18n="title_hired">Hired Workers</div><div class="page-sub" data-i18n="sub_hired">Workers hired through the marketplace, ready to assign to a project</div></div>
+</div>
+<div class="panel">
+<table class="data-table">
+<thead><tr>
+<th>Worker</th><th data-i18n="ttl_Job Title*">Job</th><th data-i18n="ttl_Wage (₹)">Wage</th>
+<th data-i18n="ttl_Start Date">Start Date</th><th>Status</th><th></th>
+</tr></thead>
+<tbody id="hiresBody"></tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/api.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/shell.js"></script>
+<script src="js/chatbot.js"></script>
+<script>
+  function inr(n){ return n === null || n === undefined ? "—" : "₹" + Number(n).toLocaleString("en-IN"); }
+  function initials(name){ return (name||"?").trim().split(/\s+/).map(w=>w[0]).slice(0,2).join("").toUpperCase(); }
+
+  function row(h){
+    const w = h.worker || {};
+    return `<tr>
+      <td>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="width:28px;height:28px;border-radius:50%;background:var(--c-bg-inset);display:flex;align-items:center;justify-content:center;font-family:var(--f-mono);font-size:11px;font-weight:700;">${w.avatarInitials || initials(w.name)}</div>
+          ${w.name || "Worker"}
+        </div>
+      </td>
+      <td>${h.job ? h.job.title : "—"}</td>
+      <td>${h.agreedWage ? inr(h.agreedWage) + "/" + tBadge(h.job ? h.job.wageType : "daily") : "—"}</td>
+      <td>${h.startDate ? new Date(h.startDate).toLocaleDateString("en-IN") : "—"}</td>
+      <td><span class="badge ${badgeClass(h.status)}">${tBadge(h.status)}</span></td>
+      <td style="text-align:right;white-space:nowrap;">
+        <a class="btn btn-sm" href="attendance.html">Attendance</a>
+        <a class="btn btn-sm" href="payments.html">Wages</a>
+        <a class="btn btn-sm" href="workers.html">${t("nav_workers")}</a>
+      </td>
+    </tr>`;
+  }
+
+  document.addEventListener("shell:ready", async () => {
+    const hires = await Contralabos.marketplace.hires.forContractor();
+    document.getElementById("hiresBody").innerHTML = hires.length
+      ? hires.map(row).join("")
+      : `<tr><td colspan="6"><div class="empty-state">${t("ttl_No hired workers yet.")}</div></td></tr>`;
+  });
+</script>
+</body>
+</html>

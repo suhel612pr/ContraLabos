@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="favicon.svg" rel="icon" type="image/svg+xml"/>
+<link href="manifest.json" rel="manifest"/>
+<title>Find Jobs — Contralabos</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&amp;family=Inter:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="css/tokens.css" rel="stylesheet"/>
+<link href="css/app.css" rel="stylesheet"/>
+</head>
+<body data-page="findjobs">
+<div class="app-shell">
+<div id="sidebar-mount"></div>
+<div class="main-col">
+<div id="topnav-mount"></div>
+<div class="breadcrumb"><a href="dashboard-worker.html">Home</a><span class="sep">/</span><span class="current" data-i18n="nav_findjobs">Find Jobs</span></div>
+<div class="page">
+<div class="page-head">
+<div><div class="page-title" data-i18n="title_findjobs">Find Jobs</div><div class="page-sub" data-i18n="sub_findjobs">Browse published labour requirements near you</div></div>
+</div>
+<div class="panel">
+<div class="table-toolbar">
+<input id="fSearch" placeholder="Search job title…" type="text"/>
+<input id="fCity" placeholder="City" type="text"/>
+<input id="fSkill" placeholder="Skill (e.g. Mason)" type="text"/>
+<select id="fWorkerType">
+<option value="" data-i18n="ttl_Worker Type">All Worker Types</option>
+<option data-i18n="ttl_Skilled" value="skilled">Skilled</option>
+<option data-i18n="ttl_Unskilled" value="unskilled">Unskilled</option>
+<option data-i18n="ttl_Semi-skilled" value="semi_skilled">Semi-skilled</option>
+</select>
+</div>
+</div>
+<div class="card-grid" id="jobGrid"></div>
+</div>
+</div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/api.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/shell.js"></script>
+<script src="js/chatbot.js"></script>
+<script>
+  function inr(n){ return n === null || n === undefined ? "—" : "₹" + Number(n).toLocaleString("en-IN"); }
+  let allJobs = [];
+
+  function jobCard(j){
+    const wageText = j.wage ? `${inr(j.wage)} / ${tBadge(j.wageType||"daily")}` : t("ttl_Wage Type");
+    return `
+      <div class="mkt-card" onclick="window.location.href='job-detail.html?id=${j.id}'">
+        <div class="mc-title">${j.title}</div>
+        <div class="mc-sub">${j.orgName || j.contractorName || ""}</div>
+        <div class="mc-row"><span>${j.city || "—"}${j.area ? ", " + j.area : ""}</span><span class="mc-wage">${wageText}</span></div>
+        <div class="mc-row"><span>${t("ttl_Workers Required")}: ${j.workersRequired}</span><span>${j.startDate ? new Date(j.startDate).toLocaleDateString("en-IN",{day:"2-digit",month:"short"}) : "—"}</span></div>
+        <div class="mc-tags">
+          ${j.skillRequired ? `<span class="mkt-tag">${j.skillRequired}</span>` : ""}
+          ${j.workerType ? `<span class="mkt-tag">${tBadge(j.workerType)}</span>` : ""}
+          ${j.experienceRequired ? `<span class="mkt-tag">${j.experienceRequired}+ ${t("ttl_years")}</span>` : ""}
+        </div>
+        <div class="mc-foot"><span class="badge ${badgeClass(j.status)}">${tBadge(j.status)}</span><button class="btn btn-sm btn-primary" onclick="event.stopPropagation();window.location.href='job-detail.html?id=${j.id}'">${t("ttl_View Job")}</button></div>
+      </div>`;
+  }
+
+  function render(){
+    const search = document.getElementById("fSearch").value.toLowerCase();
+    const city = document.getElementById("fCity").value.toLowerCase();
+    const skill = document.getElementById("fSkill").value.toLowerCase();
+    const workerType = document.getElementById("fWorkerType").value;
+    let rows = allJobs;
+    if(search) rows = rows.filter(j => j.title.toLowerCase().includes(search));
+    if(city) rows = rows.filter(j => (j.city||"").toLowerCase().includes(city));
+    if(skill) rows = rows.filter(j => (j.skillRequired||"").toLowerCase().includes(skill));
+    if(workerType) rows = rows.filter(j => j.workerType === workerType);
+    document.getElementById("jobGrid").innerHTML = rows.length
+      ? rows.map(jobCard).join("")
+      : `<div class="empty-state" style="grid-column:1/-1;">${t("ttl_No jobs available right now.")}</div>`;
+  }
+
+  document.addEventListener("shell:ready", async () => {
+    allJobs = await Contralabos.marketplace.jobs.browsePublished();
+    render();
+  });
+  ["fSearch","fCity","fSkill","fWorkerType"].forEach(id => {
+    const el = document.getElementById(id);
+    el.addEventListener(el.tagName === "SELECT" ? "change" : "input", render);
+  });
+  document.addEventListener("languagechange:contralabos", render);
+</script>
+</body>
+</html>

@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="manifest" href="manifest.json">
+<title>Register — Contralabos</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/tokens.css">
+<style>
+  body{display:flex;min-height:100vh;align-items:center;justify-content:center;padding:30px;}
+  .reg-box{width:100%;max-width:480px;background:var(--c-bg-raised);border:1px solid var(--c-border);border-radius:8px;padding:36px;}
+  .auth-logo{display:flex;align-items:center;gap:10px;margin-bottom:26px;}
+  .auth-logo .name{font-family:var(--f-serif);font-size:18px;font-weight:600;}
+  h1{font-family:var(--f-serif);font-size:22px;font-weight:600;margin:0 0 6px;}
+  .sub{color:var(--c-text-muted);font-size:13px;margin-bottom:24px;}
+  .role-toggle{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:22px;}
+  .role-opt{border:1px solid var(--c-border);border-radius:6px;padding:14px;cursor:pointer;text-align:left;}
+  .role-opt.selected{border-color:var(--c-gold);background:var(--c-gold-dim);}
+  .role-opt .r-title{font-weight:700;font-size:13px;margin-bottom:3px;}
+  .role-opt .r-desc{font-size:11.5px;color:var(--c-text-muted);}
+  .field{margin-bottom:16px;}
+  .field label{display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:var(--c-text-muted);}
+  .field input,.field select{width:100%;background:var(--c-bg-inset);border:1px solid var(--c-border);color:var(--c-text);padding:10px 12px;border-radius:6px;font-size:13px;}
+  .field input:focus,.field select:focus{outline:none;border-color:var(--c-gold);}
+  #inviteField{display:none;}
+  .btn-submit{width:100%;padding:12px;border-radius:6px;background:var(--c-gold);border:none;color:#1a1305;font-weight:700;font-size:13px;cursor:pointer;margin-top:6px;}
+  .signin-line{text-align:center;margin-top:18px;font-size:12.5px;color:var(--c-text-muted);}
+  .signin-line a{color:var(--c-gold-light);font-weight:600;}
+</style>
+</head>
+<body>
+<div class="reg-box">
+  <div class="auth-logo">
+    <svg width="24" height="24" viewBox="0 0 40 40" fill="none"><path d="M6 34V16L14 10V34" stroke="#c9974a" stroke-width="1.6"/><path d="M14 34V6L22 2V34" stroke="#c9974a" stroke-width="1.6"/><path d="M22 34V12L34 8V34" stroke="#c9974a" stroke-width="1.6"/><path d="M3 34H37" stroke="#e3b876" stroke-width="1.8"/></svg>
+    <span class="name">CONTRALABOS</span>
+  </div>
+  <h1>Create your account</h1>
+  <p class="sub">Register a new contractor organization, or join an existing one with an invite code.</p>
+
+  <div class="role-toggle" style="grid-template-columns:1fr 1fr 1fr;">
+    <div class="role-opt selected" id="optOwner">
+      <div class="r-title">Contractor / Owner</div>
+      <div class="r-desc">Set up a new organization and create projects.</div>
+    </div>
+    <div class="role-opt" id="optWorker">
+      <div class="r-title">Find Work</div>
+      <div class="r-desc">Register as a worker, build a profile, find jobs.</div>
+    </div>
+    <div class="role-opt" id="optJoin">
+      <div class="r-title">Join a team</div>
+      <div class="r-desc">Supervisor, worker, or accountant with an invite code.</div>
+    </div>
+  </div>
+
+  <form id="regForm">
+    <div class="field">
+      <label>Full name</label>
+      <input type="text" id="name" required placeholder="Your full name">
+    </div>
+    <div class="field">
+      <label>Email address</label>
+      <input type="email" id="email" required placeholder="you@company.com">
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <input type="password" id="password" required placeholder="Create a password">
+    </div>
+    <div class="field" id="orgField">
+      <label>Organization name</label>
+      <input type="text" id="orgName" placeholder="e.g. BuildRight Contractors Pvt. Ltd.">
+    </div>
+    <div class="field" id="inviteField">
+      <label>Organization ID</label>
+      <input type="text" id="inviteCode" placeholder="e.g. 3f9a1c2e-...">
+      <div style="font-size:11px;color:var(--c-text-dim);margin-top:5px;">Ask your contractor/admin for this — they can find it on their Profile page. It links your account to their organization.</div>
+    </div>
+    <div class="field" id="joinRoleField" style="display:none;">
+      <label>Your role on this team</label>
+      <select id="joinRole">
+        <option value="supervisor">Site Supervisor</option>
+        <option value="worker">Worker</option>
+        <option value="accountant">Accountant / Office Staff</option>
+        <option value="admin">Platform Administrator</option>
+      </select>
+    </div>
+    <button type="submit" class="btn-submit">Create Account</button>
+  </form>
+  <div class="signin-line">Already have an account? <a href="login.html">Sign in</a></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/api.js"></script>
+<script>
+  let selectedRole = "contractor";
+  const optOwner = document.getElementById("optOwner"), optJoin = document.getElementById("optJoin"), optWorker = document.getElementById("optWorker");
+  const orgField = document.getElementById("orgField"), inviteField = document.getElementById("inviteField");
+  function selectOpt(opt){ [optOwner, optJoin, optWorker].forEach(o => o.classList.toggle("selected", o === opt)); }
+  optOwner.addEventListener("click", () => {
+    selectedRole = "contractor"; selectOpt(optOwner);
+    orgField.style.display = "block"; inviteField.style.display = "none";
+    document.getElementById("joinRoleField").style.display = "none";
+    document.getElementById("inviteCode").required = false;
+  });
+  optJoin.addEventListener("click", () => {
+    selectedRole = "supervisor"; selectOpt(optJoin);
+    orgField.style.display = "none"; inviteField.style.display = "block";
+    document.getElementById("joinRoleField").style.display = "block";
+  });
+  optWorker.addEventListener("click", () => {
+    selectedRole = "worker"; selectOpt(optWorker);
+    orgField.style.display = "none"; inviteField.style.display = "none";
+    document.getElementById("joinRoleField").style.display = "none";
+    document.getElementById("inviteCode").required = false;
+  });
+  document.getElementById("joinRole").addEventListener("change", (event) => {
+    const workerJoining = event.target.value === "worker";
+    inviteField.style.display = workerJoining ? "none" : "block";
+    document.getElementById("inviteCode").required = !workerJoining;
+  });
+
+  document.getElementById("regForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const password = document.getElementById("password").value;
+    const isJoining = optJoin.classList.contains("selected");
+    const payload = {
+      name: document.getElementById("name").value,
+      email: document.getElementById("email").value,
+      password: password,
+      role: isJoining ? document.getElementById("joinRole").value : selectedRole,
+      orgName: document.getElementById("orgName").value || undefined,
+      inviteCode: document.getElementById("inviteCode").value || undefined
+    };
+    try{
+      const result = await Contralabos.auth.register(payload);
+      if(result.session){
+        window.location.href = "onboarding.html";
+      }else{
+        alert("Account created. Check your email to confirm your account, then log in.");
+        window.location.href = "login.html";
+      }
+    }catch(err){
+      alert(err.message || "Registration failed.");
+    }
+  });
+</script>
+<script src="js/validate.js"></script>
+</body>
+</html>

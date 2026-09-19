@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="favicon.svg" rel="icon" type="image/svg+xml"/>
+<link href="manifest.json" rel="manifest"/>
+<title>Profile — Contralabos</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&amp;family=Inter:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="css/tokens.css" rel="stylesheet"/>
+<link href="css/app.css" rel="stylesheet"/>
+</head>
+<body data-page="profile">
+<div class="app-shell">
+<div id="sidebar-mount"></div>
+<div class="main-col">
+<div id="topnav-mount"></div>
+<div class="breadcrumb"><a href="dashboard.html">Home</a><span class="sep">/</span><span class="current" data-i18n="nav_profile">Profile</span></div>
+<div class="page">
+<div class="page-head">
+<div><div class="page-title" data-i18n="title_profile">Profile &amp; Settings</div><div class="page-sub" data-i18n="sub_profile">Account details and preferences</div></div>
+<div class="page-actions"><button class="btn btn-danger" id="logoutBtn">Log Out</button></div>
+</div>
+<div class="panel">
+<div class="panel-head"><h3 data-i18n="ttl_Profile Photo">Profile Photo</h3></div>
+<div class="panel-body" style="display:flex;align-items:center;gap:20px;">
+<div id="avatarPreview" style="width:72px;height:72px;border-radius:6px;background:var(--c-gold-dim);color:var(--c-gold-light);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;font-family:var(--f-mono);overflow:hidden;flex-shrink:0;border:1px solid var(--c-border);"></div>
+<div>
+<input accept="image/*" id="avatarInput" style="display:none;" type="file"/>
+<button class="btn" id="uploadAvatarBtn">Upload Photo</button>
+<button class="btn btn-sm" id="removeAvatarBtn" style="margin-left:6px;">Remove</button>
+<div class="hint" style="margin-top:8px;">JPG or PNG, square images work best. Stored locally in this demo — a real deployment would upload to cloud storage.</div>
+</div>
+</div>
+</div>
+<div class="panel">
+<div class="panel-head"><h3 data-i18n="ttl_Account Details">Account Details</h3></div>
+<div class="panel-body">
+<div class="form-grid">
+<div class="field"><label data-i18n="ttl_Full Name">Full Name</label><input id="pName" type="text"/></div>
+<div class="field"><label data-i18n="ttl_Phone Number">Phone Number</label><input id="pPhone" placeholder="+91 XXXXX XXXXX" type="tel"/></div>
+<div class="field"><label data-i18n="ttl_Email">Email</label><input disabled="" id="pEmail" type="email"/></div>
+<div class="field"><label data-i18n="ttl_Role">Role</label><input disabled="" id="pRole" type="text"/></div>
+<div class="field"><label data-i18n="ttl_Organization">Organization</label><input disabled="" id="pOrg" type="text"/></div>
+<div class="field"><label>Organization ID <span style="font-weight:400;color:var(--c-text-dim);">(share this to invite teammates)</span></label>
+  <div style="display:flex;gap:8px;">
+    <input disabled="" id="pOrgId" type="text" style="font-family:var(--f-mono);font-size:11px;">
+    <button class="btn btn-sm" type="button" id="copyOrgIdBtn">Copy</button>
+  </div>
+</div>
+</div>
+<button class="btn btn-primary" id="saveBtn">Save Changes</button>
+</div>
+</div>
+<div class="panel">
+<div class="panel-head"><h3 data-i18n="ttl_Preferences">Preferences</h3></div>
+<div class="panel-body">
+<div class="field"><label data-i18n="ttl_Language">Language</label>
+<select class="lang-select" style="padding:9px 10px;width:200px;"><option value="en">English</option><option value="hi">हिंदी</option><option value="mr">मराठी</option></select>
+</div>
+</div>
+</div>
+<div class="panel">
+<div class="panel-head"><h3 data-i18n="ttl_Security">Security</h3></div>
+<div class="panel-body form-grid">
+<div class="field"><label data-i18n="ttl_Current Password">Current Password</label><input placeholder="••••••••" type="password"/></div>
+<div class="field"><label data-i18n="ttl_New Password">New Password</label><input placeholder="••••••••" type="password"/></div>
+<button class="btn field-full" style="width:fit-content;">Update Password</button>
+</div>
+</div>
+<div class="panel" id="mktProfilePanel" style="display:none;">
+<div class="panel-head"><h3 data-i18n="ttl_My Marketplace Profile">My Marketplace Profile</h3></div>
+<div class="panel-body">
+<div class="form-grid">
+<div class="field"><label data-i18n="ttl_Worker Type">Worker Type</label>
+<select id="mpWorkerType"><option value="">—</option><option data-i18n="ttl_Skilled" value="skilled">Skilled</option><option data-i18n="ttl_Unskilled" value="unskilled">Unskilled</option><option data-i18n="ttl_Semi-skilled" value="semi_skilled">Semi-skilled</option></select>
+</div>
+<div class="field"><label data-i18n="ttl_Availability">Availability</label>
+<select id="mpAvailability"><option data-i18n="ttl_Available" value="available">Available</option><option data-i18n="ttl_Busy" value="busy">Busy</option><option data-i18n="ttl_Unavailable" value="unavailable">Unavailable</option></select>
+</div>
+<div class="field field-full"><label data-i18n="ttl_Primary Skills (comma-separated)">Primary Skills (comma-separated)</label><input id="mpSkills" placeholder="e.g. Mason, Tiling, Plumbing" type="text"/></div>
+<div class="field"><label data-i18n="ttl_City*">City</label><input id="mpCity" type="text"/></div>
+<div class="field"><label data-i18n="ttl_Area">Area</label><input id="mpArea" type="text"/></div>
+<div class="field"><label data-i18n="ttl_Experience">Experience (years)</label><input id="mpExperience" min="0" step="0.5" type="number"/></div>
+<div class="field"><label data-i18n="ttl_Expected Wage">Expected Daily Wage (₹)</label><input id="mpWage" min="0" type="number"/></div>
+<div class="field field-full"><label data-i18n="ttl_Description">About</label><textarea id="mpBio" rows="3" style="width:100%;background:var(--c-bg-inset);border:1px solid var(--c-border);color:var(--c-text);padding:10px;border-radius:var(--r-sm);"></textarea></div>
+<div class="field"><label><input id="mpPublished" type="checkbox"/> <span data-i18n="ttl_Visible to contractors">Visible to contractors</span></label></div>
+</div>
+<button class="btn btn-primary" id="mpSaveBtn" data-i18n="ttl_Save Profile">Save Profile</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/api.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/shell.js"></script>
+<script src="js/chatbot.js"></script>
+<script>
+  let currentUser = null;
+  document.addEventListener("shell:ready", async (e) => {
+    const user = e.detail.user;
+    currentUser = user;
+    document.getElementById("pName").value = user.name;
+    document.getElementById("pPhone").value = user.phone || "";
+    document.getElementById("pEmail").value = user.email;
+    document.getElementById("pRole").value = user.role.charAt(0).toUpperCase()+user.role.slice(1);
+    if(user.orgId){
+      document.getElementById("pOrgId").value = user.orgId;
+      const { data: org } = await supabaseClient.from("organizations").select("name").eq("id", user.orgId).single();
+      document.getElementById("pOrg").value = org ? org.name : "";
+    } else {
+      document.getElementById("pOrgId").value = "";
+      document.getElementById("pOrg").value = "Not part of an organization yet";
+      const copyBtn = document.getElementById("copyOrgIdBtn");
+      if(copyBtn) copyBtn.disabled = true;
+    }
+    renderAvatarPreview(user);
+    if(user.role === "worker") await loadMarketplaceProfile();
+  });
+
+  async function loadMarketplaceProfile(){
+    const panel = document.getElementById("mktProfilePanel");
+    if(!panel) return;
+    panel.style.display = "block";
+    const wp = await Contralabos.marketplace.workerProfiles.getMine();
+    document.getElementById("mpWorkerType").value = (wp && wp.workerType) || "";
+    document.getElementById("mpSkills").value = wp && wp.skills ? wp.skills.join(", ") : "";
+    document.getElementById("mpCity").value = (wp && wp.city) || "";
+    document.getElementById("mpArea").value = (wp && wp.area) || "";
+    document.getElementById("mpExperience").value = (wp && wp.experienceYears) || "";
+    document.getElementById("mpWage").value = (wp && wp.expectedWage) || "";
+    document.getElementById("mpAvailability").value = (wp && wp.availability) || "available";
+    document.getElementById("mpBio").value = (wp && wp.bio) || "";
+    document.getElementById("mpPublished").checked = wp ? !!wp.isPublished : true;
+  }
+
+  document.getElementById("copyOrgIdBtn").addEventListener("click", () => {
+    navigator.clipboard.writeText(document.getElementById("pOrgId").value);
+    const btn = document.getElementById("copyOrgIdBtn");
+    btn.textContent = "Copied!";
+    setTimeout(() => btn.textContent = "Copy", 1500);
+  });
+
+  const mpSaveBtn = document.getElementById("mpSaveBtn");
+  if(mpSaveBtn) mpSaveBtn.addEventListener("click", async () => {
+    try{
+      await Contralabos.marketplace.workerProfiles.updateMine({
+        workerType: document.getElementById("mpWorkerType").value || null,
+        skills: document.getElementById("mpSkills").value.split(",").map(s=>s.trim()).filter(Boolean),
+        city: document.getElementById("mpCity").value,
+        area: document.getElementById("mpArea").value,
+        experienceYears: Number(document.getElementById("mpExperience").value) || 0,
+        expectedWage: document.getElementById("mpWage").value ? Number(document.getElementById("mpWage").value) : null,
+        expectedWageType: "daily",
+        availability: document.getElementById("mpAvailability").value,
+        bio: document.getElementById("mpBio").value,
+        isPublished: document.getElementById("mpPublished").checked,
+      });
+      alert("Marketplace profile saved.");
+    }catch(err){ alert(err.message || "Unable to save profile."); }
+  });
+
+  function renderAvatarPreview(user){
+    const box = document.getElementById("avatarPreview");
+    box.innerHTML = user.avatarUrl ? `<img src="${user.avatarUrl}" style="width:100%;height:100%;object-fit:cover;">` : (user.avatarInitials || "U");
+  }
+
+  document.getElementById("uploadAvatarBtn").addEventListener("click", () => document.getElementById("avatarInput").click());
+  document.getElementById("avatarInput").addEventListener("change", async (e) => {
+    const file = e.target.files[0];
+    if(!file) return;
+    if(file.size > 2 * 1024 * 1024){ alert("Please choose an image under 2MB."); return; }
+    const updated = await Contralabos.auth.updateAvatar(currentUser.id, file);
+    currentUser = updated;
+    renderAvatarPreview(updated);
+  });
+  document.getElementById("removeAvatarBtn").addEventListener("click", async () => {
+    const updated = await Contralabos.auth.updateAvatar(currentUser.id, null);
+    currentUser = updated;
+    renderAvatarPreview(updated);
+  });
+
+  document.getElementById("logoutBtn").addEventListener("click", async () => {
+    await Contralabos.auth.logout();
+    window.location.href = "login.html";
+  });
+  document.getElementById("saveBtn").addEventListener("click", async () => {
+    await Contralabos.auth.updateProfile(currentUser.id, {
+      name: document.getElementById("pName").value,
+      phone: document.getElementById("pPhone").value
+    });
+    alert("Profile changes saved.");
+    window.location.reload();
+  });
+</script>
+</body>
+</html>

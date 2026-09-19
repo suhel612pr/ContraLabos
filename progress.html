@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="favicon.svg" rel="icon" type="image/svg+xml"/>
+<link href="manifest.json" rel="manifest"/>
+<title>Progress Reports — Contralabos</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&amp;family=Inter:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="css/tokens.css" rel="stylesheet"/>
+<link href="css/app.css" rel="stylesheet"/>
+<style>
+  .report-card{border:1px solid var(--c-border);border-bottom:1px solid var(--c-border-soft);padding:16px;}
+  .report-card + .report-card{border-top:none;}
+  .report-head{display:flex;justify-content:space-between;margin-bottom:8px;}
+  .report-head .r-proj{font-weight:700;font-size:13px;}
+  .report-head .r-date{font-family:var(--f-mono);font-size:11px;color:var(--c-text-dim);}
+  .report-bar{height:5px;background:var(--c-bg-inset);border:1px solid var(--c-border);margin:8px 0;}
+  .report-bar-fill{height:100%;background:var(--c-gold);}
+  .report-field{font-size:12px;margin-top:6px;}
+  .report-field b{color:var(--c-text-muted);font-weight:600;}
+</style>
+</head>
+<body data-page="progress">
+<div class="app-shell">
+<div id="sidebar-mount"></div>
+<div class="main-col">
+<div id="topnav-mount"></div>
+<div class="breadcrumb"><a href="dashboard.html">Home</a><span class="sep">/</span><span class="current" data-i18n="nav_progress">Progress Reports</span></div>
+<div class="page">
+<div class="page-head">
+<div><div class="page-title" data-i18n="title_progress">Daily Progress Reports</div><div class="page-sub" data-i18n="sub_progress">Submitted by supervisors, reviewed remotely by contractors</div></div>
+<div class="page-actions" id="pageActions"></div>
+</div>
+<div id="reportList"></div>
+</div>
+</div>
+</div>
+<div id="prOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:90;align-items:center;justify-content:center;">
+<div class="panel" style="width:480px;margin:0;max-height:88vh;overflow-y:auto;">
+<div class="panel-head"><h3 data-i18n="ttl_Submit Daily Progress">Submit Daily Progress</h3><button class="btn btn-sm" id="closePrBtn">✕</button></div>
+<div class="panel-body">
+<form id="prForm">
+<div class="field"><label data-i18n="ttl_Project*">Project <span class="req">*</span></label><select id="pProject" required=""></select></div>
+<div class="field"><label data-i18n="ttl_Work Completed Today*">Work Completed Today <span class="req">*</span></label><textarea id="pWork" required="" rows="2"></textarea></div>
+<div class="field"><label data-i18n="ttl_Progress Percentage*">Progress Percentage <span class="req">*</span></label><input id="pPct" max="100" min="0" required="" type="number"/></div>
+<div class="field"><label data-i18n="ttl_Issues / Problems">Issues / Problems</label><textarea id="pIssues" rows="2"></textarea></div>
+<div class="field"><label data-i18n="ttl_Material Requirements">Material Requirements</label><input id="pMaterial" type="text"/></div>
+<div class="field"><label data-i18n="ttl_Next-day Plan">Next-day Plan</label><textarea id="pNext" rows="2"></textarea></div>
+<div class="field"><label data-i18n="ttl_Photos / Video">Photos / Video</label><input accept="image/*,video/*" multiple="" type="file" id="pMedia"/></div>
+<button class="btn btn-primary" style="width:100%;justify-content:center;" type="submit">Submit Report</button>
+</form>
+</div>
+</div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/api.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/shell.js"></script>
+<script src="js/chatbot.js"></script>
+<script>
+  let projects = [], user = null;
+  const projName = (id) => (projects.find(p=>p.id===id)||{}).name || id;
+
+  async function render(){
+    const reports = (await Contralabos.progress.list()).sort((a,b)=>new Date(b.date)-new Date(a.date));
+    document.getElementById("reportList").innerHTML = reports.map(r => `
+      <div class="report-card">
+        <div class="report-head"><span class="r-proj">${projName(r.projectId)}</span><span class="r-date">${r.date} · ${r.submittedBy}</span></div>
+        <div class="report-field">${r.workCompleted}</div>
+        <div class="report-bar"><div class="report-bar-fill" style="width:${r.percentage}%;"></div></div>
+        <div class="report-field"><b>${r.percentage}% complete</b></div>
+        ${r.issues ? `<div class="report-field"><b>Issues:</b> ${r.issues}</div>` : ""}
+        ${r.materialNeeds ? `<div class="report-field"><b>Material needs:</b> ${r.materialNeeds}</div>` : ""}
+        ${r.nextDayPlan ? `<div class="report-field"><b>Next day:</b> ${r.nextDayPlan}</div>` : ""}
+      </div>`).join("");
+  }
+
+  document.addEventListener("shell:ready", async (e) => {
+    user = e.detail.user;
+    projects = await Contralabos.projects.list();
+    document.getElementById("pProject").innerHTML = projects.map(p=>`<option value="${p.id}">${p.name}</option>`).join("");
+    if(user.role === "supervisor" || user.role === "contractor"){
+      document.getElementById("pageActions").innerHTML = `<button class="btn btn-primary" id="newPrBtn">+ Submit Progress</button>`;
+      document.getElementById("newPrBtn").addEventListener("click", () => document.getElementById("prOverlay").style.display="flex");
+    }
+    render();
+  });
+  document.getElementById("closePrBtn").addEventListener("click", () => document.getElementById("prOverlay").style.display="none");
+  document.getElementById("prForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    try{
+      await Contralabos.progress.submit({
+        projectId: document.getElementById("pProject").value,
+        workCompleted: document.getElementById("pWork").value,
+        percentage: Number(document.getElementById("pPct").value),
+        issues: document.getElementById("pIssues").value,
+        materialNeeds: document.getElementById("pMaterial").value,
+        nextDayPlan: document.getElementById("pNext").value,
+        files: document.getElementById("pMedia").files
+      });
+      document.getElementById("prOverlay").style.display="none";
+      render();
+    }catch(err){ alert(err.message || "Unable to submit progress report."); }
+  });
+</script>
+<script src="js/validate.js"></script>
+</body>
+</html>

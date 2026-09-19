@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="favicon.svg" rel="icon" type="image/svg+xml"/>
+<link href="manifest.json" rel="manifest"/>
+<title>My Work — Contralabos</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&amp;family=Inter:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="css/tokens.css" rel="stylesheet"/>
+<link href="css/app.css" rel="stylesheet"/>
+</head>
+<body data-page="mywork">
+<div class="app-shell">
+<div id="sidebar-mount"></div>
+<div class="main-col">
+<div id="topnav-mount"></div>
+<div class="breadcrumb"><a href="dashboard-worker.html">Home</a><span class="sep">/</span><span class="current" data-i18n="nav_mywork">My Work</span></div>
+<div class="page">
+<div class="page-head">
+<div><div class="page-title" data-i18n="title_mywork">My Work</div><div class="page-sub" data-i18n="sub_mywork">Jobs you've been hired for</div></div>
+</div>
+<div class="card-grid" id="workGrid"></div>
+</div>
+</div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/api.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/shell.js"></script>
+<script src="js/chatbot.js"></script>
+<script>
+  function inr(n){ return n === null || n === undefined ? "—" : "₹" + Number(n).toLocaleString("en-IN"); }
+
+  function card(h){
+    const c = h.contractor || {};
+    const j = h.job || {};
+    return `
+      <div class="mkt-card" style="cursor:default;">
+        <div class="mc-title">${j.title || "Job"}</div>
+        <div class="mc-sub">${c.name || "Contractor"} · ${j.city || ""}</div>
+        <div class="mc-row"><span>${t("ttl_Wage")}</span><span class="mc-wage">${h.agreedWage ? inr(h.agreedWage) + "/" + tBadge(j.wageType||"daily") : "—"}</span></div>
+        <div class="mc-row"><span>${t("ttl_Start Date")}</span><span>${h.startDate ? new Date(h.startDate).toLocaleDateString("en-IN") : "—"}</span></div>
+        <div class="mc-foot">
+          <span class="badge ${badgeClass(h.status)}">${tBadge(h.status)}</span>
+          <div style="display:flex;gap:6px;">
+            <a class="btn btn-sm" href="attendance.html">Attendance</a>
+            <a class="btn btn-sm" href="payments.html">Wages</a>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  document.addEventListener("shell:ready", async () => {
+    const hires = await Contralabos.marketplace.hires.forWorker();
+    document.getElementById("workGrid").innerHTML = hires.length
+      ? hires.map(card).join("")
+      : `<div class="empty-state" style="grid-column:1/-1;">${t("ttl_You don't have any active work yet.")}</div>`;
+  });
+</script>
+</body>
+</html>

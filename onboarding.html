@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="manifest" href="manifest.json">
+<title>Complete Your Profile — Contralabos</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/app.css">
+<style>
+  body{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px;}
+  .ob-box{width:100%;max-width:560px;background:var(--c-bg-raised);border:1px solid var(--c-border);border-radius:8px;padding:36px;}
+  h1{font-family:var(--f-serif);font-size:22px;font-weight:600;margin:0 0 4px;}
+  .sub{color:var(--c-text-muted);font-size:13px;margin-bottom:24px;}
+  .progress-mini{display:flex;gap:4px;margin-bottom:26px;}
+  .progress-mini div{flex:1;height:3px;background:var(--c-border);border-radius:2px;}
+  .progress-mini div.done{background:var(--c-gold);}
+</style>
+</head>
+<body data-page="onboarding">
+<div class="ob-box">
+  <div class="progress-mini"><div class="done"></div><div class="done" id="step2bar"></div><div id="step3bar"></div></div>
+  <h1 id="obTitle">Set up your organization</h1>
+  <p class="sub" id="obSub">This information is used across every project, report, and payment record.</p>
+
+  <form id="obForm">
+    <div id="obFields" class="form-grid"></div>
+    <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;margin-top:10px;">Continue →</button>
+  </form>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/api.js"></script>
+<script>
+  let currentUser = null;
+  const formsByRole = {
+    contractor: {
+      title:"Set up your organization", sub:"This information is used across every project, report, and payment record.",
+      fields:[
+        {id:"orgName",label:"Organization name",type:"text",full:true,placeholder:"e.g. BuildRight Contractors Pvt. Ltd."},
+        {id:"gstin",label:"GSTIN",type:"text",placeholder:"22AAAAA0000A1Z5"},
+        {id:"city",label:"City",type:"text",placeholder:"Pune"},
+        {id:"phone",label:"Phone number",type:"text",placeholder:"+91 98xxxxxx"},
+        {id:"orgAddress",label:"Registered address",type:"text",full:true,placeholder:"Office address"}
+      ]
+    },
+    supervisor: {
+      title:"Complete your profile", sub:"Contractors use this to assign you to the right sites.",
+      fields:[
+        {id:"phone",label:"Phone number",type:"text",placeholder:"+91 98xxxxxx"},
+        {id:"experience",label:"Years of experience",type:"text",placeholder:"e.g. 6"},
+        {id:"address",label:"Current address",type:"text",full:true,placeholder:"Your address"}
+      ]
+    },
+    worker: {
+      title:"Complete your profile", sub:"Used for attendance, wages, and to help contractors find you on the marketplace.",
+      fields:[
+        {id:"phone",label:"Phone number",type:"text",placeholder:"+91 98xxxxxx"},
+        {id:"skill",label:"Primary skill",type:"text",placeholder:"e.g. Mason, Electrician"},
+        {id:"city",label:"City",type:"text",placeholder:"e.g. Pune"},
+        {id:"experience",label:"Years of experience",type:"text",placeholder:"e.g. 4"},
+        {id:"expectedWage",label:"Expected daily wage (₹)",type:"text",placeholder:"e.g. 800"},
+        {id:"aadhaar",label:"Aadhaar number (for records)",type:"text",placeholder:"XXXX XXXX XXXX"}
+      ]
+    },
+    accountant: {
+      title:"Complete your profile", sub:"Used for payment and expense authorization records.",
+      fields:[
+        {id:"phone",label:"Phone number",type:"text",placeholder:"+91 98xxxxxx"},
+        {id:"department",label:"Department",type:"text",placeholder:"Finance / Accounts"}
+      ]
+    },
+    admin: {
+      title:"Complete your profile", sub:"Platform administration access.",
+      fields:[
+        {id:"phone",label:"Phone number",type:"text",placeholder:"+91 98xxxxxx"}
+      ]
+    }
+  };
+
+  (async function(){
+    currentUser = await Contralabos.auth.getCurrentUser();
+    if(!currentUser){ window.location.href = "login.html"; return; }
+    const cfg = formsByRole[currentUser.role] || formsByRole.supervisor;
+    document.getElementById("obTitle").textContent = cfg.title;
+    document.getElementById("obSub").textContent = cfg.sub;
+    const container = document.getElementById("obFields");
+    container.innerHTML = cfg.fields.map(f => `
+      <div class="field ${f.full ? "field-full" : ""}">
+        <label>${f.label}</label>
+        <input type="${f.type}" id="${f.id}" placeholder="${f.placeholder||""}" required>
+      </div>`).join("");
+  })();
+
+  document.getElementById("obForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const cfg = formsByRole[currentUser.role] || formsByRole.supervisor;
+    const fields = {};
+    cfg.fields.forEach(f => fields[f.id] = document.getElementById(f.id).value);
+    try{
+      await Contralabos.auth.completeProfile(currentUser.id, fields);
+      if(currentUser.role === "worker"){
+        try{
+          await Contralabos.marketplace.workerProfiles.updateMine({
+            skills: fields.skill ? [fields.skill] : [],
+            city: fields.city || undefined,
+            experienceYears: fields.experience ? Number(fields.experience) || 0 : undefined,
+            expectedWage: fields.expectedWage ? Number(fields.expectedWage) || null : undefined,
+            expectedWageType: fields.expectedWage ? "daily" : undefined,
+          });
+        }catch(mErr){ console.error("Could not sync marketplace profile:", mErr); }
+      }
+      const roleDashboard = {
+        contractor:"dashboard.html", supervisor:"dashboard-supervisor.html",
+        worker:"dashboard-worker.html", accountant:"dashboard-accountant.html", admin:"dashboard-admin.html"
+      };
+      window.location.href = roleDashboard[currentUser.role] || "dashboard.html";
+    }catch(err){ alert(err.message || "Unable to save your profile."); }
+  });
+</script>
+<script src="js/validate.js"></script>
+</body>
+</html>

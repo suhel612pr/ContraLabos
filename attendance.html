@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="favicon.svg" rel="icon" type="image/svg+xml"/>
+<link href="manifest.json" rel="manifest"/>
+<title>Attendance — Contralabos</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&amp;family=Inter:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="css/tokens.css" rel="stylesheet"/>
+<link href="css/app.css" rel="stylesheet"/>
+</head>
+<body data-page="attendance">
+<div class="app-shell">
+<div id="sidebar-mount"></div>
+<div class="main-col">
+<div id="topnav-mount"></div>
+<div class="breadcrumb"><a href="dashboard.html">Home</a><span class="sep">/</span><span class="current" data-i18n="nav_attendance">Attendance</span></div>
+<div class="page">
+<div class="page-head">
+<div><div class="page-title" data-i18n="title_attendance">Attendance</div><div class="page-sub" data-i18n="sub_attendance">Daily attendance recorded against worker and project</div></div>
+<div class="page-actions" id="pageActions"></div>
+</div>
+<div class="panel">
+<div class="table-toolbar">
+<select id="fProject"><option data-i18n="ttl_All Projects" value="">All Projects</option></select>
+<input id="fDate" type="date"/>
+<select id="fStatus"><option data-i18n="ttl_All Statuses" value="">All Statuses</option><option data-i18n="ttl_Present" value="present">Present</option><option data-i18n="ttl_Absent" value="absent">Absent</option><option data-i18n="ttl_Half-day" value="half-day">Half-day</option><option data-i18n="ttl_Leave" value="leave">Leave</option></select>
+</div>
+<div class="table-wrap">
+<table class="data-table" id="attTable">
+<thead><tr><th data-i18n="ttl_Date">Date</th><th data-i18n="ttl_Worker">Worker</th><th data-i18n="ttl_Project">Project</th><th data-i18n="ttl_Status">Status</th><th data-i18n="ttl_Recorded By">Recorded By</th></tr></thead>
+<tbody></tbody>
+</table>
+</div>
+<div class="table-pagination"><span id="rowCount">— results</span></div>
+</div>
+</div>
+</div>
+</div>
+<div id="recordOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:90;align-items:center;justify-content:center;">
+<div class="panel" style="width:420px;margin:0;">
+<div class="panel-head"><h3 data-i18n="ttl_Record Attendance">Record Attendance</h3><button class="btn btn-sm" id="closeRecBtn">✕</button></div>
+<div class="panel-body">
+<form id="recForm">
+<div class="field"><label data-i18n="ttl_Project*">Project <span class="req">*</span></label><select id="rProject" required=""></select></div>
+<div class="field"><label data-i18n="ttl_Worker*">Worker <span class="req">*</span></label><select id="rWorker" required=""></select></div>
+<div class="field"><label data-i18n="ttl_Date*">Date <span class="req">*</span></label><input id="rDate" required="" type="date"/></div>
+<div class="field"><label data-i18n="ttl_Status*">Status <span class="req">*</span></label>
+<select id="rStatus" required=""><option data-i18n="ttl_Present" value="present">Present</option><option data-i18n="ttl_Absent" value="absent">Absent</option><option data-i18n="ttl_Half-day" value="half-day">Half-day</option><option data-i18n="ttl_Leave" value="leave">Leave</option></select>
+</div>
+<button class="btn btn-primary" style="width:100%;justify-content:center;" type="submit">Save Attendance</button>
+</form>
+</div>
+</div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/api.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/shell.js"></script>
+<script src="js/chatbot.js"></script>
+<script>
+  let workers = [], projects = [], allAtt = [];
+  const projName = (id) => (projects.find(p=>p.id===id)||{}).name || id;
+  const workerName = (id) => (workers.find(w=>w.id===id)||{}).name || id;
+  const STATUS_BADGE = {present:"approved", absent:"rejected", "half-day":"pending", leave:"review"};
+
+  function render(){
+    const proj = document.getElementById("fProject").value;
+    const date = document.getElementById("fDate").value;
+    const status = document.getElementById("fStatus").value;
+    let rows = allAtt;
+    if(proj) rows = rows.filter(a=>a.projectId===proj);
+    if(date) rows = rows.filter(a=>a.date===date);
+    if(status) rows = rows.filter(a=>a.status===status);
+    document.querySelector("#attTable tbody").innerHTML = rows.length ? rows.map(a => `
+      <tr><td>${a.date}</td><td>${workerName(a.workerId)}</td><td>${projName(a.projectId)}</td>
+      <td><span class="badge ${STATUS_BADGE[a.status]}">${tBadge(a.status)}</span></td><td>${a.recordedBy==='u2'?'Sunita Pawar':a.recordedBy}</td></tr>`).join("") : `<tr><td colspan="5" style="color:var(--c-text-dim);text-align:center;padding:32px;">No attendance records match these filters.</td></tr>`;
+    document.getElementById("rowCount").textContent = rows.length + " results";
+  }
+
+  document.addEventListener("shell:ready", async (e) => {
+    const user = e.detail.user;
+    workers = await Contralabos.workers.list();
+    projects = await Contralabos.projects.list();
+    const opts = projects.map(p=>`<option value="${p.id}">${p.name}</option>`).join("");
+    document.getElementById("fProject").innerHTML += opts;
+    document.getElementById("rProject").innerHTML = opts;
+    document.getElementById("rWorker").innerHTML = workers.map(w=>`<option value="${w.id}">${w.name}</option>`).join("");
+    document.getElementById("rDate").value = new Date().toISOString().slice(0,10);
+
+    // Combine attendance across all projects for demo
+    allAtt = [];
+    for(const p of projects){ allAtt = allAtt.concat(await Contralabos.attendance.listByProject(p.id)); }
+    render();
+
+    if(user.role === "supervisor" || user.role === "contractor"){
+      document.getElementById("pageActions").innerHTML = `<button class="btn btn-primary" id="recordBtn">+ Record Attendance</button>`;
+      document.getElementById("recordBtn").addEventListener("click", () => document.getElementById("recordOverlay").style.display="flex");
+    }
+  });
+
+  ["fProject","fDate","fStatus"].forEach(id=>document.getElementById(id).addEventListener("change",render));
+  document.addEventListener("languagechange:contralabos", render);
+  document.getElementById("closeRecBtn").addEventListener("click", () => document.getElementById("recordOverlay").style.display="none");
+  document.getElementById("recForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    try{
+      await Contralabos.attendance.record({
+        projectId: document.getElementById("rProject").value,
+        workerId: document.getElementById("rWorker").value,
+        date: document.getElementById("rDate").value,
+        status: document.getElementById("rStatus").value,
+        recordedBy: Shell.currentUser.id
+      });
+      window.location.reload();
+    }catch(err){ alert(err.message || "Unable to record attendance."); }
+  });
+</script>
+<script src="js/validate.js"></script>
+</body>
+</html>

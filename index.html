@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+
+<title>Contralabos</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/api.js"></script>
+<script>
+  (async function(){
+    try{
+      const user = await Contralabos.auth.getCurrentUser();
+      if(!user){ window.location.replace("login.html"); return; }
+      if(!user.profileComplete){ window.location.replace("onboarding.html"); return; }
+      const roleDashboard = {
+        contractor:"dashboard.html", supervisor:"dashboard-supervisor.html",
+        worker:"dashboard-worker.html", accountant:"dashboard-accountant.html", admin:"dashboard-admin.html"
+      };
+      window.location.replace(roleDashboard[user.role] || "dashboard.html");
+    }catch(e){
+      window.location.replace("login.html");
+    }
+  })();
+</script>
+</head>
+<body style="background:#0a0d13;color:#9aa2ad;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;">
+  Loading Contralabos…
+</body>
+</html>

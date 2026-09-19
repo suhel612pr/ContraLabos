@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="favicon.svg" rel="icon" type="image/svg+xml"/>
+<link href="manifest.json" rel="manifest"/>
+<title>Workers — Contralabos</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&amp;family=Inter:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="css/tokens.css" rel="stylesheet"/>
+<link href="css/app.css" rel="stylesheet"/>
+</head>
+<body data-page="workers">
+<div class="app-shell">
+<div id="sidebar-mount"></div>
+<div class="main-col">
+<div id="topnav-mount"></div>
+<div class="breadcrumb"><a href="dashboard.html">Home</a><span class="sep">/</span><span class="current" data-i18n="nav_workers">Workers</span></div>
+<div class="page">
+<div class="page-hero">
+<img alt="Construction workers cutting steel rebar on site at dusk" src="images/workers.png"/>
+<div class="page-hero-content">
+<div class="eyebrow">Workforce</div>
+<h1 data-i18n="nav_workers">Workers</h1>
+<p data-i18n="ttl_Manage your workforce, skills, roles and assign them to projects.">Manage your workforce, skills, roles and assign them to projects.</p>
+</div>
+</div>
+<div class="page-head">
+<div><div class="page-title" data-i18n="title_workers">Workers</div><div class="page-sub" data-i18n="sub_workers">Worker records and project assignments</div></div>
+<div class="page-actions"><button class="btn btn-primary" id="newWorkerBtn">+ Add Worker</button></div>
+</div>
+<div class="stat-row" id="statRow"></div>
+<div class="panel">
+<div class="table-toolbar">
+<select id="fProject"><option data-i18n="ttl_All Projects" value="">All Projects</option></select>
+<select id="fStatus"><option data-i18n="ttl_All Statuses" value="">All Statuses</option><option data-i18n="ttl_Active" value="active">Active</option><option data-i18n="ttl_Inactive" value="inactive">Inactive</option></select>
+<input id="fSearch" placeholder="Search worker name…" type="text"/>
+</div>
+<div class="table-wrap">
+<table class="data-table" id="workerTable">
+<thead><tr><th data-i18n="ttl_Name">Name</th><th data-i18n="ttl_Assigned Project">Assigned Project</th><th data-i18n="ttl_Phone">Phone</th><th data-i18n="ttl_Wage Rate/Day">Wage Rate/Day</th><th data-i18n="ttl_Status">Status</th><th data-i18n="ttl_Platform Access">Platform Access</th><th></th></tr></thead>
+<tbody></tbody>
+</table>
+</div>
+<div class="table-pagination"><span id="rowCount">— results</span><span>Page 1 of 1</span></div>
+</div>
+</div>
+</div>
+</div>
+<div id="newWorkerOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:90;align-items:center;justify-content:center;">
+<div class="panel" style="width:440px;margin:0;">
+<div class="panel-head"><h3 data-i18n="ttl_Add Worker">Add Worker</h3><button class="btn btn-sm" id="closeWorkerBtn">✕</button></div>
+<div class="panel-body">
+<form id="workerForm">
+<div class="field"><label data-i18n="ttl_Full Name*">Full Name <span class="req">*</span></label><input id="nwName" required="" type="text"/></div>
+<div class="field"><label data-i18n="ttl_Assign to Project*">Assign to Project <span class="req">*</span></label><select id="nwProject" required=""></select></div>
+<div class="field"><label data-i18n="ttl_Wage Rate per Day (₹)*">Wage Rate per Day (₹) <span class="req">*</span></label><input id="nwWage" min="1" required="" type="number"/></div>
+<div class="field"><label data-i18n="ttl_Phone Number">Phone Number</label><input id="nwPhone" placeholder="+91 XXXXX XXXXX" type="tel"/></div>
+<div class="hint" style="margin-bottom:14px;">Direct platform login for workers is optional and can be granted later via an invite code.</div>
+<button class="btn btn-primary" style="width:100%;justify-content:center;" type="submit">Add Worker</button>
+</form>
+</div>
+</div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/api.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/shell.js"></script>
+<script src="js/chatbot.js"></script>
+<script>
+  function inr(n){ return "₹" + Number(n).toLocaleString("en-IN"); }
+  let workers = [], projects = [];
+  const projName = (id) => (projects.find(p=>p.id===id)||{}).name || "Unassigned";
+
+  function render(){
+    const proj = document.getElementById("fProject").value;
+    const status = document.getElementById("fStatus").value;
+    const search = document.getElementById("fSearch").value.toLowerCase();
+    let rows = workers;
+    if(proj) rows = rows.filter(w=>String(w.projectId)===String(proj));
+    if(status) rows = rows.filter(w=>w.status===status);
+    if(search) rows = rows.filter(w=>w.name.toLowerCase().includes(search));
+    document.querySelector("#workerTable tbody").innerHTML = rows.length ? rows.map(w => `
+      <tr><td>${w.name}</td><td>${projName(w.projectId)}</td>
+      <td>${w.phone ? `<a class="call-btn" href="tel:${w.phone.replace(/\s/g,'')}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.9v3a2 2 0 01-2.2 2 19.8 19.8 0 01-8.6-3.1 19.5 19.5 0 01-6-6A19.8 19.8 0 012.1 4.2 2 2 0 014.1 2h3a2 2 0 012 1.7c.1 1 .3 2 .7 2.9a2 2 0 01-.4 2.1L8.1 9.9a16 16 0 006 6l1.2-1.2a2 2 0 012.1-.4c.9.4 1.9.6 2.9.7a2 2 0 011.7 2z"/></svg>${w.phone}</a>` : "—"}</td>
+      <td class="num">${inr(w.wageRate)}</td>
+      <td><span class="badge ${w.status==='active'?'approved':'completed'}">${tBadge(w.status)}</span></td>
+      <td>${w.userId ? `<span class="badge review">${t("ttl_Enabled")}</span>` : `<span class="badge completed">${t("ttl_Record Only")}</span>`}</td>
+      <td><button class="btn btn-sm" onclick="deleteWorker('${w.id}')">Delete</button></td></tr>`).join("") : `<tr><td colspan="7" style="color:var(--c-text-dim);text-align:center;padding:32px;">No workers match these filters.</td></tr>`;
+    document.getElementById("statRow").innerHTML = `
+      <div class="stat-cell"><div class="s-label">Total Workers</div><div class="s-value">${rows.length}</div></div>
+      <div class="stat-cell"><div class="s-label">Active</div><div class="s-value">${rows.filter(w=>w.status==='active').length}</div></div>
+      <div class="stat-cell"><div class="s-label">Avg. Wage Rate</div><div class="s-value">${inr(rows.length ? Math.round(rows.reduce((s,w)=>s+w.wageRate,0)/rows.length) : 0)}</div></div>
+      <div class="stat-cell"><div class="s-label">With Platform Access</div><div class="s-value">${rows.filter(w=>w.userId).length}</div></div>`;
+    document.getElementById("rowCount").textContent = rows.length + " results";
+  }
+
+  document.addEventListener("shell:ready", async () => {
+    workers = await Contralabos.workers.list();
+    projects = await Contralabos.projects.list();
+    const projOpts = projects.map(p=>`<option value="${p.id}">${p.name}</option>`).join("");
+    document.getElementById("fProject").insertAdjacentHTML("beforeend", projOpts);
+    document.getElementById("nwProject").innerHTML = projOpts || '<option value="">Create a project first</option>';
+    document.getElementById("nwProject").disabled = projects.length === 0;
+    render();
+  });
+  ["fProject","fStatus"].forEach(id=>document.getElementById(id).addEventListener("change",render));
+  document.getElementById("fSearch").addEventListener("input", render);
+  document.getElementById("newWorkerBtn").addEventListener("click", () => document.getElementById("newWorkerOverlay").style.display="flex");
+  document.getElementById("closeWorkerBtn").addEventListener("click", () => document.getElementById("newWorkerOverlay").style.display="none");
+  window.deleteWorker = async function(id){
+    if(!confirm("Delete this worker and their attendance and payment records? This cannot be undone.")) return;
+    try{
+      await Contralabos.workers.remove(id);
+      workers = await Contralabos.workers.list();
+      render();
+    }catch(err){ alert(err.message || "Unable to delete worker."); }
+  };
+  document.getElementById("workerForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const projectId = document.getElementById("nwProject").value;
+    if(!projectId){
+      alert("Create a project before adding a worker.");
+      return;
+    }
+    try{
+      await Contralabos.workers.create({
+        name: document.getElementById("nwName").value,
+        projectId,
+        wageRate: Number(document.getElementById("nwWage").value),
+        phone: document.getElementById("nwPhone").value
+      });
+      window.location.reload();
+    }catch(err){
+      alert(err.message || "Unable to add worker.");
+    }
+  });
+  document.addEventListener("languagechange:contralabos", render);
+</script>
+<script src="js/validate.js"></script>
+</body>
+</html>

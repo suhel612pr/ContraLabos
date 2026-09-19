@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="favicon.svg" rel="icon" type="image/svg+xml"/>
+<link href="manifest.json" rel="manifest"/>
+<title>Dashboard — Contralabos</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&amp;family=Inter:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="css/tokens.css" rel="stylesheet"/>
+<link href="css/app.css" rel="stylesheet"/>
+</head>
+<body data-page="dashboard">
+<div class="app-shell">
+<div id="sidebar-mount"></div>
+<div class="main-col">
+<div id="topnav-mount"></div>
+<div class="breadcrumb"><a href="dashboard-accountant.html">Home</a><span class="sep">/</span><span class="current" data-i18n="nav_dashboard">Dashboard</span></div>
+<div class="page">
+<div class="page-head">
+<div><div class="page-title" id="greetName">Welcome back</div><div class="page-sub" data-i18n="ttl_Finance &amp; Accounts · 1 payment request and 2 expense entries awaiting your review">Finance &amp; Accounts · 1 payment request and 2 expense entries awaiting your review</div></div>
+</div>
+<div class="stat-row" id="statRow"></div>
+<div class="panel">
+<div class="panel-head"><h3 data-i18n="ttl_Requests Awaiting Review">Requests Awaiting Review</h3><div class="panel-tools"><button class="btn btn-sm" data-i18n="ttl_View all" onclick="window.location.href='requests.html'">View all</button></div></div>
+<div class="table-wrap">
+<table class="data-table" id="reqTable">
+<thead><tr><th data-i18n="ttl_ID">ID</th><th data-i18n="ttl_Type">Type</th><th data-i18n="ttl_Project">Project</th><th data-i18n="ttl_Amount">Amount</th><th data-i18n="ttl_Status">Status</th><th></th></tr></thead>
+<tbody></tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/api.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/shell.js"></script>
+<script src="js/chatbot.js"></script>
+<script>
+  function inr(n){ return "₹" + Number(n).toLocaleString("en-IN"); }
+  let _acUser, _acReqs, _acProjects;
+
+  function renderAccountant(){
+    if(_acUser) document.getElementById("greetName").textContent = t("greeting_welcome_back") + ", " + _acUser.name.split(" ")[0];
+    if(!_acReqs) return;
+    const projName = (id) => (_acProjects.find(p=>p.id===id)||{}).name || id;
+    const pending = _acReqs.filter(r=>r.status==="submitted"||r.status==="review");
+    document.getElementById("statRow").innerHTML = `
+      <div class="stat-cell"><div class="s-label">${t("ttl_Awaiting Review")}</div><div class="s-value">${pending.length}</div></div>
+      <div class="stat-cell"><div class="s-label">${t("ttl_Approved (30d)")}</div><div class="s-value">${_acReqs.filter(r=>r.status==='approved').length}</div></div>
+      <div class="stat-cell"><div class="s-label">${t("ttl_Total Requested")}</div><div class="s-value">${inr(_acReqs.reduce((s,r)=>s+r.amount,0))}</div></div>
+      <div class="stat-cell"><div class="s-label">${t("ttl_Rejected (30d)")}</div><div class="s-value">${_acReqs.filter(r=>r.status==='rejected').length}</div></div>`;
+
+    document.querySelector("#reqTable tbody").innerHTML = _acReqs.map(r => `
+      <tr>
+        <td class="row-link" onclick="window.location.href='request-detail.html?id=${r.id}'">${r.id}</td>
+        <td>${tBadge(r.type)}</td><td>${projName(r.projectId)}</td><td class="num">${inr(r.amount)}</td>
+        <td><span class="badge ${r.status}">${tBadge(r.status)}</span></td>
+        <td><button class="btn btn-sm" onclick="window.location.href='request-detail.html?id=${r.id}'">${t("ttl_Review")}</button></td>
+      </tr>`).join("");
+  }
+
+  document.addEventListener("shell:ready", async (e) => {
+    _acUser = e.detail.user;
+    _acReqs = await Contralabos.requests.list();
+    _acProjects = await Contralabos.projects.list();
+    renderAccountant();
+  });
+
+  document.addEventListener("languagechange:contralabos", renderAccountant);
+</script>
+</body>
+</html>

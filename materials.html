@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="favicon.svg" rel="icon" type="image/svg+xml"/>
+<link href="manifest.json" rel="manifest"/>
+<title>Materials &amp; Inventory — Contralabos</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&amp;family=Inter:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="css/tokens.css" rel="stylesheet"/>
+<link href="css/app.css" rel="stylesheet"/>
+<style>
+  .tabs{display:flex;gap:2px;border-bottom:1px solid var(--c-border);margin-bottom:20px;}
+  .tab{padding:10px 16px;font-size:12.5px;font-weight:600;color:var(--c-text-muted);cursor:pointer;border-bottom:2px solid transparent;}
+  .tab.active{color:var(--c-gold-light);border-bottom-color:var(--c-gold);}
+  .tab-panel{display:none;} .tab-panel.active{display:block;}
+</style>
+</head>
+<body data-page="materials">
+<div class="app-shell">
+<div id="sidebar-mount"></div>
+<div class="main-col">
+<div id="topnav-mount"></div>
+<div class="breadcrumb"><a href="dashboard.html">Home</a><span class="sep">/</span><span class="current" data-i18n="nav_materials">Materials &amp; Inventory</span></div>
+<div class="page">
+<div class="page-hero">
+<img alt="Warehouse shelving stocked with materials and inventory pallets" src="images/materials.png"/>
+<div class="page-hero-content">
+<div class="eyebrow">Inventory</div>
+<h1 data-i18n="nav_materials">Materials &amp; Inventory</h1>
+<p data-i18n="ttl_Track receipts, usage, and stock levels for every material across your sites.">Track receipts, usage, and stock levels for every material across your sites.</p>
+</div>
+</div>
+<div class="page-head">
+<div><div class="page-title" data-i18n="title_materials">Materials &amp; Inventory</div><div class="page-sub" data-i18n="sub_materials">Stock = received − used, derived automatically per project</div></div>
+<div class="page-actions">
+<button class="btn" id="usageBtn">+ Record Usage</button>
+<button class="btn btn-primary" id="receiptBtn">+ Record Receipt</button>
+</div>
+</div>
+<div class="field" style="max-width:280px;margin-bottom:20px;">
+<label data-i18n="ttl_Project">Project</label>
+<select id="projSelect"></select>
+</div>
+<div class="panel">
+<div class="panel-head"><h3 data-i18n="ttl_Current Stock">Current Stock</h3></div>
+<div id="stockSkyline"></div>
+<div class="table-wrap">
+<table class="data-table" id="stockTable">
+<thead><tr><th data-i18n="ttl_Material">Material</th><th data-i18n="ttl_Unit">Unit</th><th data-i18n="ttl_Received">Received</th><th data-i18n="ttl_Used">Used</th><th data-i18n="ttl_Remaining">Remaining</th></tr></thead>
+<tbody></tbody>
+</table>
+</div>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+<div class="panel">
+<div class="panel-head"><h3 data-i18n="ttl_Purchase / Receipt Log">Purchase / Receipt Log</h3></div>
+<div class="table-wrap">
+<table class="data-table" id="receiptTable">
+<thead><tr><th data-i18n="ttl_Material">Material</th><th data-i18n="ttl_Qty">Qty</th><th data-i18n="ttl_Cost">Cost</th><th data-i18n="ttl_Vendor">Vendor</th><th data-i18n="ttl_Date">Date</th></tr></thead>
+<tbody></tbody>
+</table>
+</div>
+</div>
+<div class="panel">
+<div class="panel-head"><h3 data-i18n="ttl_Usage Log">Usage Log</h3></div>
+<div class="table-wrap">
+<table class="data-table" id="usageTable">
+<thead><tr><th data-i18n="ttl_Material">Material</th><th data-i18n="ttl_Qty">Qty</th><th data-i18n="ttl_Recorded By">Recorded By</th><th data-i18n="ttl_Date">Date</th></tr></thead>
+<tbody></tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="receiptOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:90;align-items:center;justify-content:center;">
+<div class="panel" style="width:420px;margin:0;">
+<div class="panel-head"><h3 data-i18n="ttl_Record Material Receipt">Record Material Receipt</h3><button class="btn btn-sm" id="closeReceiptBtn">✕</button></div>
+<div class="panel-body">
+<form id="receiptForm">
+<div class="field"><label data-i18n="ttl_Material*">Material <span class="req">*</span></label><select id="rMat" required=""></select></div>
+<div class="field"><label data-i18n="ttl_Quantity*">Quantity <span class="req">*</span></label><input id="rQty" min="1" required="" type="number"/></div>
+<div class="field"><label data-i18n="ttl_Cost (₹)*">Cost (₹) <span class="req">*</span></label><input id="rCost" min="1" required="" type="number"/></div>
+<div class="field"><label data-i18n="ttl_Vendor">Vendor</label><input id="rVendor" type="text"/></div>
+<button class="btn btn-primary" style="width:100%;justify-content:center;" type="submit">Save Receipt</button>
+</form>
+</div>
+</div>
+</div>
+<div id="usageOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:90;align-items:center;justify-content:center;">
+<div class="panel" style="width:420px;margin:0;">
+<div class="panel-head"><h3 data-i18n="ttl_Record Material Usage">Record Material Usage</h3><button class="btn btn-sm" id="closeUsageBtn">✕</button></div>
+<div class="panel-body">
+<form id="usageForm">
+<div class="field"><label data-i18n="ttl_Material*">Material <span class="req">*</span></label><select id="uMat" required=""></select></div>
+<div class="field"><label data-i18n="ttl_Quantity*">Quantity <span class="req">*</span></label><input id="uQty" min="1" required="" type="number"/></div>
+<div class="hint" id="stockWarning" style="display:none;color:var(--c-status-rejected);margin-bottom:10px;">This exceeds available stock. An authorized override will be required.</div>
+<button class="btn btn-primary" style="width:100%;justify-content:center;" type="submit">Save Usage</button>
+</form>
+</div>
+</div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/api.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/shell.js"></script>
+<script src="js/charts.js"></script>
+<script src="js/chatbot.js"></script>
+<script>
+  function inr(n){ return "₹" + Number(n).toLocaleString("en-IN"); }
+  let projects = [], catalog = [], stockLoadId = 0;
+
+  async function loadForProject(pid){
+    const loadId = ++stockLoadId;
+    const stock = await Contralabos.materials.stockByProject(pid);
+    const receipts = (await Contralabos.materials.receipts()).filter(r=>r.projectId===pid);
+    const usage = (await Contralabos.materials.usage()).filter(u=>u.projectId===pid);
+    if(loadId !== stockLoadId) return;
+    const matName = (id) => (catalog.find(m=>m.id===id)||{}).name || id;
+
+    renderSkyline("stockSkyline", stock.map(s => ({
+      label: s.name.split(" ")[0], value: Math.max(s.remaining,0), max: Math.max(s.received,1), display: s.remaining+" "+s.unit,
+      title: s.name,
+      detail: `Received ${s.received} ${s.unit}, used ${s.used} ${s.unit}. ${s.remaining <= s.received*0.15 ? "Running low — consider reordering." : "Stock level looks healthy."}`
+    })));
+
+    document.querySelector("#stockTable tbody").innerHTML = stock.map(s => `
+      <tr><td>${s.name}</td><td>${s.unit}</td><td class="num">${s.received}</td><td class="num">${s.used}</td>
+      <td class="num" style="color:${s.remaining<0?'var(--c-status-rejected)':'var(--c-text)'}">${s.remaining}</td></tr>`).join("") || "<tr><td colspan='5' style='color:var(--c-text-dim);'>No material activity yet for this project.</td></tr>";
+
+    document.querySelector("#receiptTable tbody").innerHTML = receipts.map(r => `
+      <tr><td>${matName(r.materialId)}</td><td class="num">${r.quantity}</td><td class="num">${inr(r.cost)}</td><td>${r.vendor||"—"}</td><td>${r.date}</td></tr>`).join("") || "<tr><td colspan='5' style='color:var(--c-text-dim);'>No receipts yet.</td></tr>";
+
+    document.querySelector("#usageTable tbody").innerHTML = usage.map(u => `
+      <tr><td>${matName(u.materialId)}</td><td class="num">${u.quantity}</td><td>Sunita Pawar</td><td>${u.date}</td></tr>`).join("") || "<tr><td colspan='4' style='color:var(--c-text-dim);'>No usage recorded yet.</td></tr>";
+  }
+
+  document.addEventListener("shell:ready", async () => {
+    projects = await Contralabos.projects.list();
+    catalog = await Contralabos.materials.catalog();
+    document.getElementById("projSelect").innerHTML = projects.map(p=>`<option value="${p.id}">${p.name}</option>`).join("");
+    document.getElementById("rMat").innerHTML = catalog.map(m=>`<option value="${m.id}">${m.name} (${m.unit})</option>`).join("");
+    document.getElementById("uMat").innerHTML = catalog.map(m=>`<option value="${m.id}">${m.name} (${m.unit})</option>`).join("");
+    if(projects.length) await loadForProject(projects[0].id);
+  });
+
+  document.getElementById("projSelect").addEventListener("change", (e) => { loadForProject(e.target.value); });
+  document.getElementById("receiptBtn").addEventListener("click", () => document.getElementById("receiptOverlay").style.display="flex");
+  document.getElementById("closeReceiptBtn").addEventListener("click", () => document.getElementById("receiptOverlay").style.display="none");
+  document.getElementById("usageBtn").addEventListener("click", () => document.getElementById("usageOverlay").style.display="flex");
+  document.getElementById("closeUsageBtn").addEventListener("click", () => document.getElementById("usageOverlay").style.display="none");
+
+  document.getElementById("receiptForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    try{
+      await Contralabos.materials.recordReceipt({
+        materialId: document.getElementById("rMat").value, projectId: document.getElementById("projSelect").value,
+        quantity: Number(document.getElementById("rQty").value), cost: Number(document.getElementById("rCost").value),
+        vendor: document.getElementById("rVendor").value
+      });
+      document.getElementById("receiptOverlay").style.display="none";
+      loadForProject(document.getElementById("projSelect").value);
+    }catch(err){ alert(err.message || "Unable to record receipt."); }
+  });
+  document.getElementById("usageForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    try{
+      await Contralabos.materials.recordUsage({
+        materialId: document.getElementById("uMat").value, projectId: document.getElementById("projSelect").value,
+        quantity: Number(document.getElementById("uQty").value), recordedBy: Shell.currentUser.id
+      });
+      document.getElementById("usageOverlay").style.display="none";
+      loadForProject(document.getElementById("projSelect").value);
+    }catch(err){ alert(err.message || "Unable to record material usage."); }
+  });
+</script>
+<script src="js/validate.js"></script>
+</body>
+</html>

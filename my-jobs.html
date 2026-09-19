@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="favicon.svg" rel="icon" type="image/svg+xml"/>
+<link href="manifest.json" rel="manifest"/>
+<title>My Jobs — Contralabos</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&amp;family=Inter:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="css/tokens.css" rel="stylesheet"/>
+<link href="css/app.css" rel="stylesheet"/>
+</head>
+<body data-page="myjobs">
+<div class="app-shell">
+<div id="sidebar-mount"></div>
+<div class="main-col">
+<div id="topnav-mount"></div>
+<div class="breadcrumb"><a href="dashboard.html">Home</a><span class="sep">/</span><span class="current" data-i18n="nav_myjobs">My Jobs</span></div>
+<div class="page">
+<div class="page-head">
+<div><div class="page-title" data-i18n="title_myjobs">My Jobs</div><div class="page-sub" data-i18n="sub_myjobs">Every labour requirement you've posted, and its hiring progress</div></div>
+<div class="page-actions"><button class="btn btn-primary" onclick="window.location.href='post-job.html'" data-i18n="ttl_+ Post Job">+ Post Job</button></div>
+</div>
+<div class="panel">
+<div class="table-toolbar">
+<select id="fStatus">
+<option value="">All Statuses</option>
+<option data-i18n="ttl_Draft" value="draft">Draft</option>
+<option data-i18n="ttl_Published" value="published">Published</option>
+<option data-i18n="ttl_Paused" value="paused">Paused</option>
+<option data-i18n="ttl_Filled" value="filled">Filled</option>
+<option data-i18n="ttl_Cancelled" value="cancelled">Cancelled</option>
+</select>
+</div>
+<table class="data-table">
+<thead><tr>
+<th data-i18n="ttl_Job Title*">Job</th><th data-i18n="ttl_City*">Location</th>
+<th data-i18n="ttl_Wage (₹)">Wage</th><th data-i18n="ttl_Workers Required">Hiring</th>
+<th>Status</th><th data-i18n="ttl_Applications">Applications</th><th></th>
+</tr></thead>
+<tbody id="jobsBody"></tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/api.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/shell.js"></script>
+<script src="js/chatbot.js"></script>
+<script>
+  function inr(n){ return n === null || n === undefined ? "—" : "₹" + Number(n).toLocaleString("en-IN"); }
+  let allJobs = [], appCounts = {};
+
+  function row(j){
+    const applied = appCounts[j.id] || 0;
+    return `<tr>
+      <td><a href="job-detail.html?id=${j.id}" style="color:var(--c-gold-light);">${j.title}</a></td>
+      <td>${j.city || "—"}</td>
+      <td>${j.wage ? inr(j.wage) + "/" + tBadge(j.wageType||"daily") : "—"}</td>
+      <td>${j.workersHired} / ${j.workersRequired}</td>
+      <td><span class="badge ${badgeClass(j.status)}">${tBadge(j.status)}</span></td>
+      <td>${applied}</td>
+      <td style="text-align:right;">
+        <a class="btn btn-sm" href="post-job.html?id=${j.id}">${t("ttl_Edit")}</a>
+        <a class="btn btn-sm" href="applications.html?jobId=${j.id}">${t("ttl_View Applications")}</a>
+      </td>
+    </tr>`;
+  }
+
+  function render(){
+    const status = document.getElementById("fStatus").value;
+    const rows = status ? allJobs.filter(j => j.status === status) : allJobs;
+    document.getElementById("jobsBody").innerHTML = rows.length
+      ? rows.map(row).join("")
+      : `<tr><td colspan="7"><div class="empty-state">${t("ttl_You haven't posted any jobs yet.")}</div></td></tr>`;
+  }
+
+  document.addEventListener("shell:ready", async () => {
+    const [jobs, apps] = await Promise.all([
+      Contralabos.marketplace.jobs.mine(),
+      Contralabos.marketplace.applications.forContractor()
+    ]);
+    allJobs = jobs;
+    apps.forEach(a => { appCounts[a.jobId] = (appCounts[a.jobId] || 0) + 1; });
+    render();
+  });
+  document.getElementById("fStatus").addEventListener("change", render);
+  document.addEventListener("languagechange:contralabos", render);
+</script>
+</body>
+</html>

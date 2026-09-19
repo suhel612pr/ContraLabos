@@ -1,0 +1,92 @@
+/* ============================================================
+   CONTRACTO — DESIGN TOKENS
+   Single source of truth for color, type, spacing, radius.
+   Landing/auth pages may use the softer variants (--r-lg etc.)
+   Internal app pages should stick to --r-sm / flat surfaces.
+   ============================================================ */
+:root{
+  /* ---- Color: base ---- */
+  --c-bg:            #0a0d13;
+  --c-bg-rgb:        10,13,19;
+  --c-bg-raised:     #11151d;
+  --c-bg-raised-2:   #161b25;
+  --c-bg-inset:      #0d1017;   /* table stripes, input fields */
+
+  --c-border:        #262c38;
+  --c-border-soft:   #1b202b;
+  --c-border-gold:   rgba(201,151,74,0.35);
+
+  --c-gold:          #c9974a;
+  --c-gold-light:    #e3b876;
+  --c-gold-dim:      rgba(201,151,74,0.14);
+
+  --c-text:          #eceef1;
+  --c-text-muted:    #9aa2ad;
+  --c-text-dim:      #626a76;
+
+  /* ---- Status colors (enterprise-plain, not neon) ---- */
+  --c-status-pending:   #c9974a;
+  --c-status-review:    #6f9bd1;
+  --c-status-approved:  #5fa876;
+  --c-status-rejected:  #c25b52;
+  --c-status-completed: #7a8794;
+
+  --c-status-pending-bg:   rgba(201,151,74,0.12);
+  --c-status-review-bg:    rgba(111,155,209,0.12);
+  --c-status-approved-bg:  rgba(95,168,118,0.12);
+  --c-status-rejected-bg:  rgba(194,91,82,0.12);
+  --c-status-completed-bg: rgba(122,135,148,0.12);
+
+  /* ---- Type ---- */
+  --f-serif: 'Fraunces', serif;
+  --f-sans:  'Inter', -apple-system, sans-serif;
+  --f-mono:  'IBM Plex Mono', monospace;
+
+  /* ---- Radius: internal app is sharp/flat; auth pages may use lg ---- */
+  --r-xs: 2px;
+  --r-sm: 4px;
+  --r-lg: 12px;
+
+  /* ---- Spacing scale (compact) ---- */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 28px;
+  --sp-7: 40px;
+
+  /* ---- Layout ---- */
+  --nav-h: 56px;
+  --sidebar-w: 232px;
+  --sidebar-w-collapsed: 60px;
+}
+
+/* Light mode was removed per product decision — Contracto is dark-only. */
+
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--c-bg);
+  color:var(--c-text);
+  font-family:var(--f-sans);
+  font-size:13.5px;
+  line-height:1.5;
+}
+a{color:inherit;text-decoration:none;}
+button{font-family:inherit;}
+table{border-collapse:collapse;width:100%;}
+input,select,textarea{font-family:inherit;}
+
+/* Scrollbar - plain, not decorative */
+::-webkit-scrollbar{width:10px;height:10px;}
+::-webkit-scrollbar-track{background:var(--c-bg-inset);}
+::-webkit-scrollbar-thumb{background:var(--c-border);border-radius:0;}
+::-webkit-scrollbar-thumb:hover{background:var(--c-text-dim);}
+
+/* Focus visibility - accessibility floor */
+:focus-visible{outline:2px solid var(--c-gold);outline-offset:1px;}
+
+@media (prefers-reduced-motion: reduce){
+  *{animation-duration:0.001ms !important; transition-duration:0.001ms !important;}
+}
