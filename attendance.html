@@ -10,6 +10,17 @@
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&amp;family=Inter:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
 <link href="css/tokens.css" rel="stylesheet"/>
 <link href="css/app.css" rel="stylesheet"/>
+<style>
+  .worker-dialog{width:min(420px,100%);max-height:calc(100vh - 32px);overflow-y:auto;margin:0;}
+  .worker-combobox{position:relative;}
+  .worker-options{position:absolute;top:calc(100% + 4px);left:0;right:0;z-index:2;max-height:200px;overflow-y:auto;background:var(--c-bg-raised);border:1px solid var(--c-border);border-radius:var(--r-xs);}
+  .worker-option{display:block;width:100%;padding:9px 10px;border:0;background:transparent;color:var(--c-text);text-align:left;font:inherit;cursor:pointer;}
+  .worker-option:hover,.worker-option[aria-selected="true"]{background:var(--c-bg-inset);color:var(--c-gold-light);}
+  .worker-empty{padding:9px 10px;color:var(--c-text-dim);font-size:12px;}
+  .worker-add-form{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end;margin-top:10px;}
+  .worker-add-form .field{margin:0;}
+  .worker-add-form .btn{height:36px;}
+</style>
 </head>
 <body data-page="attendance">
 <div class="app-shell">
@@ -40,12 +51,28 @@
 </div>
 </div>
 <div id="recordOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:90;align-items:center;justify-content:center;">
-<div class="panel" style="width:420px;margin:0;">
+<div class="panel worker-dialog">
 <div class="panel-head"><h3 data-i18n="ttl_Record Attendance">Record Attendance</h3><button class="btn btn-sm" id="closeRecBtn">✕</button></div>
 <div class="panel-body">
 <form id="recForm">
 <div class="field"><label data-i18n="ttl_Project*">Project <span class="req">*</span></label><select id="rProject" required=""></select></div>
-<div class="field"><label data-i18n="ttl_Worker*">Worker <span class="req">*</span></label><select id="rWorker" required=""></select></div>
+<div class="field">
+<label for="rWorkerSearch" data-i18n="ttl_Worker*">Worker <span class="req">*</span></label>
+<div class="worker-combobox">
+<input id="rWorkerSearch" type="text" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="rWorkerOptions" aria-describedby="rWorkerHint" autocomplete="off" placeholder="Search workers..." required=""/>
+<input id="rWorker" type="hidden"/>
+<div class="worker-options" id="rWorkerOptions" role="listbox" hidden></div>
+</div>
+<div class="hint" id="rWorkerHint">Search workers on this project, or add a worker if they are not listed.</div>
+<div id="newWorkerForm" hidden>
+<div class="worker-add-form">
+<div class="field"><label for="rWorkerWage">Wage rate per day (₹) <span class="req">*</span></label><input id="rWorkerWage" type="number" min="1" step="0.01" placeholder="Daily wage"/></div>
+<button class="btn btn-sm" id="addWorkerBtn" type="button">Add Worker</button>
+</div>
+<div class="field" style="margin-top:10px;"><label for="rWorkerPhone">Phone (optional)</label><input id="rWorkerPhone" type="tel" placeholder="+91 XXXXX XXXXX"/></div>
+<div class="hint" id="newWorkerError" role="alert" style="display:none;color:var(--c-status-rejected);"></div>
+</div>
+</div>
 <div class="field"><label data-i18n="ttl_Date*">Date <span class="req">*</span></label><input id="rDate" required="" type="date"/></div>
 <div class="field"><label data-i18n="ttl_Status*">Status <span class="req">*</span></label>
 <select id="rStatus" required=""><option data-i18n="ttl_Present" value="present">Present</option><option data-i18n="ttl_Absent" value="absent">Absent</option><option data-i18n="ttl_Half-day" value="half-day">Half-day</option><option data-i18n="ttl_Leave" value="leave">Leave</option></select>
@@ -88,7 +115,7 @@
     const opts = projects.map(p=>`<option value="${p.id}">${p.name}</option>`).join("");
     document.getElementById("fProject").innerHTML += opts;
     document.getElementById("rProject").innerHTML = opts;
-    document.getElementById("rWorker").innerHTML = workers.map(w=>`<option value="${w.id}">${w.name}</option>`).join("");
+    setupWorkerPicker();
     document.getElementById("rDate").value = new Date().toISOString().slice(0,10);
 
     // Combine attendance across all projects for demo
@@ -101,6 +128,164 @@
       document.getElementById("recordBtn").addEventListener("click", () => document.getElementById("recordOverlay").style.display="flex");
     }
   });
+
+  function setupWorkerPicker(){
+    const search = document.getElementById("rWorkerSearch");
+    const selectedId = document.getElementById("rWorker");
+    const options = document.getElementById("rWorkerOptions");
+    const workerForm = document.getElementById("newWorkerForm");
+    let matches = [];
+    let activeIndex = -1;
+
+    function closeOptions(){
+      options.hidden = true;
+      search.setAttribute("aria-expanded", "false");
+      search.removeAttribute("aria-activedescendant");
+      activeIndex = -1;
+    }
+
+    function selectWorker(worker){
+      search.value = worker.name;
+      selectedId.value = worker.id;
+      search.setCustomValidity("");
+      workerForm.hidden = true;
+      closeOptions();
+    }
+
+    function showNewWorkerForm(){
+      workerForm.hidden = false;
+      document.getElementById("newWorkerError").style.display = "none";
+      closeOptions();
+      document.getElementById("rWorkerWage").focus();
+    }
+
+    function renderOptions(){
+      const projectId = document.getElementById("rProject").value;
+      const query = search.value.trim().toLocaleLowerCase();
+      matches = workers.filter(worker =>
+        worker.projectId === projectId && worker.name.toLocaleLowerCase().includes(query)
+      );
+      options.replaceChildren();
+      activeIndex = -1;
+      search.removeAttribute("aria-activedescendant");
+      search.setAttribute("aria-expanded", "true");
+      options.hidden = false;
+
+      if(!matches.length){
+        const empty = document.createElement("div");
+        empty.className = "worker-empty";
+        empty.textContent = query ? "No matching workers on this project." : "No workers have been added to this project yet.";
+        options.append(empty);
+        if(query && projectId){
+          const addOption = document.createElement("button");
+          addOption.type = "button";
+          addOption.className = "worker-option";
+          addOption.textContent = `Add "${search.value.trim()}" as a new worker...`;
+          addOption.addEventListener("pointerdown", event => event.preventDefault());
+          addOption.addEventListener("click", showNewWorkerForm);
+          options.append(addOption);
+        }
+        return;
+      }
+
+      matches.forEach((worker, index) => {
+        const option = document.createElement("button");
+        option.type = "button";
+        option.className = "worker-option";
+        option.id = `rWorkerOption${index}`;
+        option.setAttribute("role", "option");
+        option.setAttribute("aria-selected", "false");
+        option.textContent = worker.name;
+        option.addEventListener("pointerdown", event => event.preventDefault());
+        option.addEventListener("click", () => selectWorker(worker));
+        options.append(option);
+      });
+    }
+
+    function setActiveOption(index){
+      if(!matches.length) return;
+      activeIndex = (index + matches.length) % matches.length;
+      options.querySelectorAll('[role="option"]').forEach((option, optionIndex) => {
+        option.setAttribute("aria-selected", String(optionIndex === activeIndex));
+      });
+      const activeOption = document.getElementById(`rWorkerOption${activeIndex}`);
+      search.setAttribute("aria-activedescendant", activeOption.id);
+      activeOption.scrollIntoView({ block: "nearest" });
+    }
+
+    search.addEventListener("focus", renderOptions);
+    search.addEventListener("input", () => {
+      selectedId.value = "";
+      search.setCustomValidity("Choose a worker from the list or add them to this project.");
+      workerForm.hidden = true;
+      renderOptions();
+    });
+    search.addEventListener("keydown", event => {
+      if(event.key === "ArrowDown"){
+        event.preventDefault();
+        if(options.hidden) renderOptions();
+        setActiveOption(activeIndex + 1);
+      }else if(event.key === "ArrowUp"){
+        event.preventDefault();
+        if(options.hidden) renderOptions();
+        setActiveOption(activeIndex < 0 ? matches.length - 1 : activeIndex - 1);
+      }else if(event.key === "Enter" && !options.hidden && activeIndex >= 0){
+        event.preventDefault();
+        selectWorker(matches[activeIndex]);
+      }else if(event.key === "Enter" && !options.hidden && !matches.length && search.value.trim()){
+        event.preventDefault();
+        showNewWorkerForm();
+      }else if(event.key === "Escape"){
+        closeOptions();
+      }
+    });
+    search.addEventListener("blur", () => window.setTimeout(closeOptions, 100));
+    search.addEventListener("invalid", () => {
+      if(!selectedId.value) search.setCustomValidity("Choose a worker from the list or add them to this project.");
+    });
+    document.getElementById("rProject").addEventListener("change", () => {
+      selectedId.value = "";
+      search.value = "";
+      search.setCustomValidity("");
+      workerForm.hidden = true;
+      renderOptions();
+    });
+
+    document.getElementById("addWorkerBtn").addEventListener("click", async () => {
+      const name = search.value.trim();
+      const projectId = document.getElementById("rProject").value;
+      const wageInput = document.getElementById("rWorkerWage");
+      const errorMessage = document.getElementById("newWorkerError");
+      const addButton = document.getElementById("addWorkerBtn");
+      if(!name || !projectId || !wageInput.value || Number(wageInput.value) < 1){
+        wageInput.setCustomValidity("Enter a daily wage of at least 1.");
+        wageInput.reportValidity();
+        return;
+      }
+      wageInput.setCustomValidity("");
+      addButton.disabled = true;
+      errorMessage.style.display = "none";
+      try{
+        const worker = await Contralabos.workers.create({
+          name,
+          projectId,
+          wageRate: Number(wageInput.value),
+          phone: document.getElementById("rWorkerPhone").value
+        });
+        workers.push(worker);
+        selectWorker(worker);
+        wageInput.value = "";
+        document.getElementById("rWorkerPhone").value = "";
+      }catch(err){
+        errorMessage.textContent = err.code === "42501"
+          ? "You don't have permission to add workers. Ask a contractor or supervisor."
+          : (err.message || "Unable to add this worker.");
+        errorMessage.style.display = "block";
+      }finally{
+        addButton.disabled = false;
+      }
+    });
+  }
 
   ["fProject","fDate","fStatus"].forEach(id=>document.getElementById(id).addEventListener("change",render));
   document.addEventListener("languagechange:contralabos", render);
