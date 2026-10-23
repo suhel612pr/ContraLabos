@@ -15,6 +15,12 @@
   .tab{padding:10px 16px;font-size:12.5px;font-weight:600;color:var(--c-text-muted);cursor:pointer;border-bottom:2px solid transparent;}
   .tab.active{color:var(--c-gold-light);border-bottom-color:var(--c-gold);}
   .tab-panel{display:none;} .tab-panel.active{display:block;}
+  .material-dialog{width:min(420px,100%);max-height:calc(100vh - 32px);overflow-y:auto;margin:0;}
+  .material-combobox{position:relative;}
+  .material-options{position:absolute;top:calc(100% + 4px);left:0;right:0;z-index:2;max-height:200px;overflow-y:auto;background:var(--c-bg-raised);border:1px solid var(--c-border);border-radius:var(--r-xs);}
+  .material-option{display:block;width:100%;padding:9px 10px;border:0;background:transparent;color:var(--c-text);text-align:left;font:inherit;cursor:pointer;}
+  .material-option:hover,.material-option[aria-selected="true"]{background:var(--c-bg-inset);color:var(--c-gold-light);}
+  .material-empty{padding:9px 10px;color:var(--c-text-dim);font-size:12px;}
 </style>
 </head>
 <body data-page="materials">
@@ -91,11 +97,19 @@
 </div>
 </div>
 <div id="usageOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:90;align-items:center;justify-content:center;">
-<div class="panel" style="width:420px;margin:0;">
+<div class="panel material-dialog">
 <div class="panel-head"><h3 data-i18n="ttl_Record Material Usage">Record Material Usage</h3><button class="btn btn-sm" id="closeUsageBtn">✕</button></div>
 <div class="panel-body">
 <form id="usageForm">
-<div class="field"><label data-i18n="ttl_Material*">Material <span class="req">*</span></label><select id="uMat" required=""></select></div>
+<div class="field">
+<label for="uMatSearch" data-i18n="ttl_Material*">Material <span class="req">*</span></label>
+<div class="material-combobox">
+<input id="uMatSearch" type="text" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="uMatOptions" aria-describedby="uMatHint" autocomplete="off" placeholder="Search materials..." required=""/>
+<input id="uMat" type="hidden"/>
+<div class="material-options" id="uMatOptions" role="listbox" hidden></div>
+</div>
+<div class="hint" id="uMatHint">Type to search, then select a material from the catalog.</div>
+</div>
 <div class="field"><label data-i18n="ttl_Quantity*">Quantity <span class="req">*</span></label><input id="uQty" min="1" required="" type="number"/></div>
 <div class="hint" id="stockWarning" style="display:none;color:var(--c-status-rejected);margin-bottom:10px;">This exceeds available stock. An authorized override will be required.</div>
 <button class="btn btn-primary" style="width:100%;justify-content:center;" type="submit">Save Usage</button>
@@ -144,9 +158,104 @@
     catalog = await Contralabos.materials.catalog();
     document.getElementById("projSelect").innerHTML = projects.map(p=>`<option value="${p.id}">${p.name}</option>`).join("");
     document.getElementById("rMat").innerHTML = catalog.map(m=>`<option value="${m.id}">${m.name} (${m.unit})</option>`).join("");
-    document.getElementById("uMat").innerHTML = catalog.map(m=>`<option value="${m.id}">${m.name} (${m.unit})</option>`).join("");
+    setupMaterialPicker();
     if(projects.length) await loadForProject(projects[0].id);
   });
+
+  function setupMaterialPicker(){
+    const search = document.getElementById("uMatSearch");
+    const selectedId = document.getElementById("uMat");
+    const options = document.getElementById("uMatOptions");
+    let matches = [];
+    let activeIndex = -1;
+
+    function closeOptions(){
+      options.hidden = true;
+      search.setAttribute("aria-expanded", "false");
+      search.removeAttribute("aria-activedescendant");
+      activeIndex = -1;
+    }
+
+    function selectMaterial(material){
+      search.value = `${material.name} (${material.unit})`;
+      selectedId.value = material.id;
+      search.setCustomValidity("");
+      closeOptions();
+    }
+
+    function renderOptions(){
+      const query = search.value.trim().toLocaleLowerCase();
+      matches = catalog.filter(material =>
+        `${material.name} ${material.unit}`.toLocaleLowerCase().includes(query)
+      );
+      options.replaceChildren();
+      activeIndex = -1;
+      search.removeAttribute("aria-activedescendant");
+      search.setAttribute("aria-expanded", "true");
+      options.hidden = false;
+
+      if(!matches.length){
+        const empty = document.createElement("div");
+        empty.className = "material-empty";
+        empty.textContent = "No matching materials in the catalog.";
+        options.append(empty);
+        return;
+      }
+
+      matches.forEach((material, index) => {
+        const option = document.createElement("button");
+        option.type = "button";
+        option.className = "material-option";
+        option.id = `uMatOption${index}`;
+        option.setAttribute("role", "option");
+        option.setAttribute("aria-selected", "false");
+        option.textContent = `${material.name} (${material.unit})`;
+        option.addEventListener("pointerdown", event => event.preventDefault());
+        option.addEventListener("click", () => selectMaterial(material));
+        options.append(option);
+      });
+    }
+
+    function setActiveOption(index){
+      if(!matches.length) return;
+      activeIndex = (index + matches.length) % matches.length;
+      options.querySelectorAll('[role="option"]').forEach((option, optionIndex) => {
+        option.setAttribute("aria-selected", String(optionIndex === activeIndex));
+      });
+      const activeOption = document.getElementById(`uMatOption${activeIndex}`);
+      search.setAttribute("aria-activedescendant", activeOption.id);
+      activeOption.scrollIntoView({ block: "nearest" });
+    }
+
+    search.addEventListener("focus", renderOptions);
+    search.addEventListener("input", () => {
+      selectedId.value = "";
+      search.setCustomValidity("Choose a material from the catalog.");
+      renderOptions();
+    });
+    search.addEventListener("keydown", event => {
+      if(event.key === "ArrowDown"){
+        event.preventDefault();
+        if(options.hidden) renderOptions();
+        setActiveOption(activeIndex + 1);
+      }else if(event.key === "ArrowUp"){
+        event.preventDefault();
+        if(options.hidden) renderOptions();
+        setActiveOption(activeIndex < 0 ? matches.length - 1 : activeIndex - 1);
+      }else if(event.key === "Enter" && !options.hidden && activeIndex >= 0){
+        event.preventDefault();
+        selectMaterial(matches[activeIndex]);
+      }else if(event.key === "Escape"){
+        closeOptions();
+      }
+    });
+    search.addEventListener("blur", () => {
+      window.setTimeout(closeOptions, 100);
+    });
+    search.addEventListener("invalid", () => {
+      if(!selectedId.value) search.setCustomValidity("Choose a material from the catalog.");
+    });
+  }
 
   document.getElementById("projSelect").addEventListener("change", (e) => { loadForProject(e.target.value); });
   document.getElementById("receiptBtn").addEventListener("click", () => document.getElementById("receiptOverlay").style.display="flex");
