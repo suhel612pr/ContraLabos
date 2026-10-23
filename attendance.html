@@ -112,6 +112,16 @@
     const user = e.detail.user;
     workers = await Contralabos.workers.list();
     projects = await Contralabos.projects.list();
+    const hires = await Contralabos.marketplace.hires.forContractor();
+    const knownWorkerIds = new Set(workers.map(worker => worker.id));
+    hires.forEach(hire => {
+      if(hire.status !== "active" || !hire.workerRowId || !hire.worker || knownWorkerIds.has(hire.workerRowId)) return;
+      workers.push({
+        id: hire.workerRowId, name: hire.worker.name, phone: hire.worker.phone,
+        wageRate: hire.agreedWage || 0, projectId: hire.job ? hire.job.projectId : null, marketplaceHired: true
+      });
+      knownWorkerIds.add(hire.workerRowId);
+    });
     const opts = projects.map(p=>`<option value="${p.id}">${p.name}</option>`).join("");
     document.getElementById("fProject").innerHTML += opts;
     document.getElementById("rProject").innerHTML = opts;
@@ -163,7 +173,8 @@
       const projectId = document.getElementById("rProject").value;
       const query = search.value.trim().toLocaleLowerCase();
       matches = workers.filter(worker =>
-        worker.projectId === projectId && worker.name.toLocaleLowerCase().includes(query)
+        (worker.projectId === projectId || (worker.marketplaceHired && !worker.projectId)) &&
+        worker.name.toLocaleLowerCase().includes(query)
       );
       options.replaceChildren();
       activeIndex = -1;

@@ -545,9 +545,9 @@ const Contralabos = (function(){
   function toPublicHire(row){
     return {
       id: row.id, jobId: row.job_id, contractorId: row.contractor_id, workerId: row.worker_id,
-      orgId: row.org_id, agreedWage: row.agreed_wage !== null ? Number(row.agreed_wage) : null,
+      orgId: row.org_id, workerRowId: row.worker_row_id, agreedWage: row.agreed_wage !== null ? Number(row.agreed_wage) : null,
       status: row.status, hiredAt: row.hired_at, startDate: row.start_date, endDate: row.end_date,
-      job: row.jobs ? { title: row.jobs.title, city: row.jobs.city, wageType: row.jobs.wage_type } : null,
+      job: row.jobs ? { title: row.jobs.title, city: row.jobs.city, wageType: row.jobs.wage_type, projectId: row.jobs.project_id } : null,
     };
   }
 
@@ -774,7 +774,7 @@ const Contralabos = (function(){
       async forContractor(){
         const { data: { session } } = await supabaseClient.auth.getSession();
         const rows = must(await supabaseClient.from("hires")
-          .select("*, jobs(title, city, wage_type), profiles!hires_worker_id_fkey(name, phone, avatar_initials)")
+          .select("*, jobs(title, city, wage_type, project_id), profiles!hires_worker_id_fkey(name, phone, avatar_initials)")
           .eq("contractor_id", session.user.id).order("hired_at", { ascending:false }));
         return rows.map(row => ({ ...toPublicHire(row), worker: row.profiles ? { name: row.profiles.name, phone: row.profiles.phone, avatarInitials: row.profiles.avatar_initials } : null }));
       },
