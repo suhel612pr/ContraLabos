@@ -216,6 +216,10 @@ const Contralabos = (function(){
       const rows = must(await supabaseClient.from("attendance").select("*").eq("project_id", projectId).order("date", { ascending:false }));
       return rows.map(toPublicAttendance);
     },
+    async listByWorker(workerId){
+      const rows = must(await supabaseClient.from("attendance").select("*").eq("worker_id", workerId).order("date", { ascending:false }));
+      return rows.map(toPublicAttendance);
+    },
     async record(entry){
       const { data: { session } } = await supabaseClient.auth.getSession();
       const { data, error } = await supabaseClient.from("attendance").insert({
@@ -781,7 +785,7 @@ const Contralabos = (function(){
       async forWorker(){
         const { data: { session } } = await supabaseClient.auth.getSession();
         const rows = must(await supabaseClient.from("hires")
-          .select("*, jobs(title, city, wage_type), profiles!hires_contractor_id_fkey(name, phone, avatar_initials)")
+          .select("*, jobs(title, city, wage_type, project_id), profiles!hires_contractor_id_fkey(name, phone, avatar_initials)")
           .eq("worker_id", session.user.id).order("hired_at", { ascending:false }));
         return rows.map(row => ({ ...toPublicHire(row), contractor: row.profiles ? { name: row.profiles.name, phone: row.profiles.phone, avatarInitials: row.profiles.avatar_initials } : null }));
       },
