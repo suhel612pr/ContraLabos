@@ -294,6 +294,25 @@ const Contralabos = (function(){
       const rows = must(await supabaseClient.from("materials").select("*").order("name"));
       return rows.map(m => ({ id: m.id, name: m.name, unit: m.unit }));
     },
+    async addToCatalog(name, unit){
+      const materialName = name.trim();
+      const materialUnit = unit.trim();
+      if(!materialName || !materialUnit) throw new Error("Enter both a material name and unit.");
+
+      const { data, error } = await supabaseClient.from("materials")
+        .insert({ name: materialName, unit: materialUnit })
+        .select("id,name,unit")
+        .single();
+      if(error?.code === "23505"){
+        const existing = must(await supabaseClient.from("materials")
+          .select("id,name,unit")
+          .eq("name", materialName)
+          .single());
+        return { id: existing.id, name: existing.name, unit: existing.unit };
+      }
+      if(error) throw error;
+      return { id: data.id, name: data.name, unit: data.unit };
+    },
     async receipts(){
       const rows = must(await supabaseClient.from("material_receipts").select("*").order("date", { ascending:false }));
       return rows.map(r => ({ id: r.id, materialId: r.material_id, projectId: r.project_id, quantity: Number(r.quantity), cost: Number(r.cost), vendor: r.vendor, date: r.date }));
