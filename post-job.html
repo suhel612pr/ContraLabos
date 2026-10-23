@@ -16,7 +16,7 @@
 <div id="sidebar-mount"></div>
 <div class="main-col">
 <div id="topnav-mount"></div>
-<div class="breadcrumb"><a href="dashboard.html">Home</a><span class="sep">/</span><a href="my-jobs.html" data-i18n="nav_myjobs">My Jobs</a><span class="sep">/</span><span class="current" data-i18n="nav_postjob">Post Job</span></div>
+<div class="breadcrumb"><a href="dashboard.html" data-i18n="nav_dashboard">Home</a><span class="sep">/</span><a href="my-jobs.html" data-i18n="nav_myjobs">My Jobs</a><span class="sep">/</span><span class="current" data-i18n="nav_postjob">Post Job</span></div>
 <div class="page">
 <div class="page-head">
 <div><div class="page-title" id="pageTitle" data-i18n="title_postjob">Post a Labour Requirement</div><div class="page-sub" data-i18n="sub_postjob">Publish a job and start receiving applications</div></div>
@@ -25,16 +25,16 @@
 <div class="panel-body">
 <form id="jobForm">
 <div class="form-grid">
-<div class="field field-full"><label data-i18n="ttl_Job Title*">Job Title <span class="req">*</span></label><input id="jTitle" required type="text" placeholder="e.g. Mason Required"/></div>
+<div class="field field-full"><label data-i18n="ttl_Job Title*">Job Title <span class="req">*</span></label><input id="jTitle" data-i18n-ph="ttl_Job Title example" required type="text" placeholder="e.g. Mason Required"/></div>
 <div class="field field-full"><label data-i18n="ttl_Description">Description</label><textarea id="jDesc" rows="3" style="width:100%;background:var(--c-bg-inset);border:1px solid var(--c-border);color:var(--c-text);padding:10px 12px;border-radius:var(--r-sm);font-size:13px;"></textarea></div>
-<div class="field"><label data-i18n="ttl_Category">Category</label><input id="jCategory" type="text" placeholder="e.g. Masonry, Electrical"/></div>
-<div class="field"><label data-i18n="ttl_Skill Required">Skill Required</label><input id="jSkill" type="text" placeholder="e.g. Mason"/></div>
+<div class="field"><label data-i18n="ttl_Category">Category</label><input id="jCategory" data-i18n-ph="ttl_Category example" type="text" placeholder="e.g. Masonry, Electrical"/></div>
+<div class="field"><label data-i18n="ttl_Skill Required">Skill Required</label><input id="jSkill" data-i18n-ph="ttl_Skill example" type="text" placeholder="e.g. Mason"/></div>
 <div class="field"><label data-i18n="ttl_Worker Type">Worker Type</label>
 <select id="jWorkerType"><option value="">—</option><option data-i18n="ttl_Skilled" value="skilled">Skilled</option><option data-i18n="ttl_Unskilled" value="unskilled">Unskilled</option><option data-i18n="ttl_Semi-skilled" value="semi_skilled">Semi-skilled</option></select>
 </div>
 <div class="field"><label data-i18n="ttl_Workers Required*">Workers Required <span class="req">*</span></label><input id="jWorkersRequired" min="1" required type="number" value="1"/></div>
-<div class="field"><label data-i18n="ttl_City*">City <span class="req">*</span></label><input id="jCity" required type="text" placeholder="e.g. Pune"/></div>
-<div class="field"><label data-i18n="ttl_Area">Area</label><input id="jArea" type="text" placeholder="e.g. Kharadi"/></div>
+<div class="field"><label data-i18n="ttl_City*">City <span class="req">*</span></label><input id="jCity" data-i18n-ph="ttl_City example" required type="text" placeholder="e.g. Pune"/></div>
+<div class="field"><label data-i18n="ttl_Area">Area</label><input id="jArea" data-i18n-ph="ttl_Area example" type="text" placeholder="e.g. Kharadi"/></div>
 <div class="field field-full"><label data-i18n="ttl_Address">Address</label><input id="jAddress" type="text"/></div>
 <div class="field"><label data-i18n="ttl_Wage (₹)">Wage (₹)</label><input id="jWage" min="0" type="number"/></div>
 <div class="field"><label data-i18n="ttl_Wage Type">Wage Type</label>
@@ -42,9 +42,9 @@
 </div>
 <div class="field"><label data-i18n="ttl_Start Date">Start Date</label><input id="jStart" type="date"/></div>
 <div class="field"><label data-i18n="ttl_End Date">End Date</label><input id="jEnd" type="date"/></div>
-<div class="field"><label data-i18n="ttl_Working Hours">Working Hours</label><input id="jHours" type="text" placeholder="e.g. 9am–6pm"/></div>
+<div class="field"><label data-i18n="ttl_Working Hours">Working Hours</label><input id="jHours" data-i18n-ph="ttl_Working Hours example" type="text" placeholder="e.g. 9am–6pm"/></div>
 <div class="field"><label data-i18n="ttl_Experience Required (years)">Experience Required (years)</label><input id="jExp" min="0" step="0.5" type="number" value="0"/></div>
-<div class="field"><label data-i18n="ttl_Urgency">Urgency</label><input id="jUrgency" type="text" placeholder="e.g. Immediate, Within a week"/></div>
+<div class="field"><label data-i18n="ttl_Urgency">Urgency</label><input id="jUrgency" data-i18n-ph="ttl_Urgency example" type="text" placeholder="e.g. Immediate, Within a week"/></div>
 <div class="field field-full"><label data-i18n="ttl_Additional Requirements">Additional Requirements</label><input id="jExtra" type="text"/></div>
 </div>
 <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:10px;">
@@ -91,7 +91,7 @@
 
   async function submitJob(publish){
     const payload = collect();
-    if(!payload.title || !payload.city){ alert("Job title and city are required."); return; }
+    if(!payload.title || !payload.city){ alert([!payload.title ? t("ttl_Job Title is required") : "", !payload.city ? t("ttl_City is required") : ""].filter(Boolean).join(". ")); return; }
     try{
       if(editId){
         await Contralabos.marketplace.jobs.update(editId, payload);
@@ -108,10 +108,16 @@
   document.getElementById("jobForm").addEventListener("submit", (e) => { e.preventDefault(); submitJob(true); });
   document.getElementById("draftBtn").addEventListener("click", () => submitJob(false));
 
+  function renderEditLabels(){
+    if(!editId) return;
+    document.getElementById("pageTitle").textContent = t("ttl_Edit Job");
+    document.getElementById("publishBtn").textContent = t("ttl_Update Job");
+  }
+
+  document.addEventListener("languagechange:contralabos", renderEditLabels);
   document.addEventListener("shell:ready", async () => {
     if(!editId) return;
-    document.getElementById("pageTitle").textContent = "Edit Job";
-    document.getElementById("publishBtn").textContent = t("ttl_Update Job");
+    renderEditLabels();
     const j = await Contralabos.marketplace.jobs.get(editId);
     if(!j) return;
     document.getElementById("jTitle").value = j.title || "";

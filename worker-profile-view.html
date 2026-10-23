@@ -16,7 +16,7 @@
 <div id="sidebar-mount"></div>
 <div class="main-col">
 <div id="topnav-mount"></div>
-<div class="breadcrumb"><a href="dashboard.html">Home</a><span class="sep">/</span><a href="find-workers.html" data-i18n="nav_findworkers">Find Workers</a><span class="sep">/</span><span class="current" id="bcName">Worker</span></div>
+<div class="breadcrumb"><a href="dashboard.html" data-i18n="nav_dashboard">Home</a><span class="sep">/</span><a href="find-workers.html" data-i18n="nav_findworkers">Find Workers</a><span class="sep">/</span><span class="current" id="bcName">Worker</span></div>
 <div class="page">
 <div class="page-head">
 <div><div class="page-title" id="wName">—</div><div class="page-sub" id="wSub">—</div></div>
@@ -27,7 +27,7 @@
 </div>
 <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:20px;">
 <div class="panel">
-<div class="panel-head"><h3 data-i18n="ttl_Job Details">Profile</h3></div>
+<div class="panel-head"><h3 data-i18n="nav_profile">Profile</h3></div>
 <div class="panel-body"><table class="data-table" style="border:none;"><tbody id="detailTable"></tbody></table></div>
 </div>
 <div class="panel">
@@ -61,31 +61,40 @@
 <script>
   function inr(n){ return n === null || n === undefined ? "—" : "₹" + Number(n).toLocaleString("en-IN"); }
   const workerId = new URLSearchParams(window.location.search).get("id");
-  let _worker;
+  let _worker, _openJobs = [];
 
-  document.addEventListener("shell:ready", async () => {
-    _worker = await Contralabos.marketplace.workerProfiles.get(workerId);
-    if(!_worker){ document.querySelector(".page").innerHTML = "<p>Worker not found.</p>"; return; }
+  function renderProfile(){
+    if(!_worker) return;
     document.getElementById("bcName").textContent = _worker.name || "Worker";
     document.getElementById("wName").textContent = _worker.name || "Worker";
     document.getElementById("wSub").textContent = `${_worker.city || ""}${_worker.area ? ", "+_worker.area : ""}`;
-    document.getElementById("callBtn").onclick = () => { if(_worker.phone) window.location.href = "tel:" + _worker.phone; };
     document.getElementById("detailTable").innerHTML = `
       <tr><td style="color:var(--c-text-dim);width:160px;">${t("ttl_Worker Type")}</td><td>${_worker.workerType ? tBadge(_worker.workerType) : "—"}</td></tr>
       <tr><td style="color:var(--c-text-dim);">${t("ttl_Experience")}</td><td>${_worker.experienceYears || 0} ${t("ttl_years")}</td></tr>
       <tr><td style="color:var(--c-text-dim);">${t("ttl_Availability")}</td><td><span class="badge ${_worker.availability==='available'?'approved':'pending'}">${tBadge(_worker.availability)}</span></td></tr>
       <tr><td style="color:var(--c-text-dim);">${t("ttl_Expected Wage")}</td><td>${_worker.expectedWage ? inr(_worker.expectedWage) + " / " + tBadge(_worker.expectedWageType||"daily") : "—"}</td></tr>
       <tr><td style="color:var(--c-text-dim);">${t("ttl_Description")}</td><td>${_worker.bio || "—"}</td></tr>
-      <tr><td style="color:var(--c-text-dim);">Phone</td><td>${_worker.phone || "—"}</td></tr>`;
+      <tr><td style="color:var(--c-text-dim);">${t("ttl_Phone")}</td><td>${_worker.phone || "—"}</td></tr>`;
     document.getElementById("skillTags").innerHTML = (_worker.skills||[]).length
       ? _worker.skills.map(s => `<span class="mkt-tag">${s}</span>`).join("")
       : `<div class="empty-state">—</div>`;
 
-    const myJobs = (await Contralabos.marketplace.jobs.mine()).filter(j => j.status === "published" && j.workersHired < j.workersRequired);
-    document.getElementById("offerJob").innerHTML = myJobs.length
-      ? myJobs.map(j => `<option value="${j.id}" data-wage="${j.wage||''}">${j.title} — ${j.city||""}</option>`).join("")
-      : `<option value="">No open jobs — post one first</option>`;
+    const offerJob = document.getElementById("offerJob");
+    const selectedJob = offerJob.value;
+    offerJob.innerHTML = _openJobs.length
+      ? _openJobs.map(j => `<option value="${j.id}" data-wage="${j.wage||''}">${j.title} — ${j.city||""}</option>`).join("")
+      : `<option value="" data-i18n="ttl_No open jobs — post one first">${t("ttl_No open jobs — post one first")}</option>`;
+    if(_openJobs.some(j => j.id === selectedJob)) offerJob.value = selectedJob;
+  }
+
+  document.addEventListener("shell:ready", async () => {
+    _worker = await Contralabos.marketplace.workerProfiles.get(workerId);
+    if(!_worker){ document.querySelector(".page").innerHTML = `<p>${t("ttl_Worker not found.")}</p>`; return; }
+    _openJobs = (await Contralabos.marketplace.jobs.mine()).filter(j => j.status === "published" && j.workersHired < j.workersRequired);
+    document.getElementById("callBtn").onclick = () => { if(_worker.phone) window.location.href = "tel:" + _worker.phone; };
+    renderProfile();
   });
+  document.addEventListener("languagechange:contralabos", renderProfile);
 
   document.getElementById("offerBtn").addEventListener("click", () => {
     document.getElementById("offerModal").style.display = "flex";
@@ -99,7 +108,7 @@
   });
   document.getElementById("offerSend").addEventListener("click", async () => {
     const jobId = document.getElementById("offerJob").value;
-    if(!jobId){ alert("Please post a job first, or select one."); return; }
+    if(!jobId){ alert(t("ttl_Please post a job first, or select one.")); return; }
     try{
       await Contralabos.marketplace.offers.send({
         jobId, workerId,
@@ -107,7 +116,7 @@
         message: document.getElementById("offerMsg").value,
       });
       document.getElementById("offerModal").style.display = "none";
-      alert("Offer sent.");
+      alert(t("ttl_Offer sent."));
     }catch(err){ alert(err.message || t("ttl_Unable to send job offer.")); }
   });
 </script>

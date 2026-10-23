@@ -16,7 +16,7 @@
 <div id="sidebar-mount"></div>
 <div class="main-col">
 <div id="topnav-mount"></div>
-<div class="breadcrumb"><a href="dashboard.html" id="bcHome">Home</a><span class="sep">/</span><span class="current" data-i18n="nav_offers">Job Offers</span></div>
+<div class="breadcrumb"><a href="dashboard.html" id="bcHome" data-i18n="nav_dashboard">Home</a><span class="sep">/</span><span class="current" data-i18n="nav_offers">Job Offers</span></div>
 <div class="page">
 <div class="page-head">
 <div><div class="page-title" id="pageTitle" data-i18n="title_offers_contractor">Job Offers</div><div class="page-sub" id="pageSub" data-i18n="sub_offers_contractor">Direct offers you've sent to workers</div></div>
@@ -69,8 +69,8 @@
   function render(){
     const isContractor = _role === "contractor";
     document.getElementById("theadRow").innerHTML = isContractor
-      ? `<tr><th>Worker</th><th data-i18n="ttl_Job Title*">Job</th><th data-i18n="ttl_Offered Wage (₹)">Offer</th><th>Status</th><th></th></tr>`
-      : `<tr><th>Contractor</th><th data-i18n="ttl_Job Title*">Job</th><th data-i18n="ttl_Offered Wage (₹)">Offer</th><th data-i18n="ttl_Offer Message">Message</th><th>Status</th><th></th></tr>`;
+      ? `<tr><th>${t("ttl_Worker")}</th><th>${t("ttl_Job Title*")}</th><th>${t("ttl_Offered Wage (₹)")}</th><th>${t("ttl_Status")}</th><th></th></tr>`
+      : `<tr><th>${t("ttl_Contractor")}</th><th>${t("ttl_Job Title*")}</th><th>${t("ttl_Offered Wage (₹)")}</th><th>${t("ttl_Offer Message")}</th><th>${t("ttl_Status")}</th><th></th></tr>`;
     document.getElementById("offersBody").innerHTML = allOffers.length
       ? allOffers.map(isContractor ? contractorRow : workerRow).join("")
       : `<tr><td colspan="6"><div class="empty-state">${t("ttl_You don't have any job offers.")}</div></td></tr>`;

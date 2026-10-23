@@ -16,7 +16,7 @@
 <div id="sidebar-mount"></div>
 <div class="main-col">
 <div id="topnav-mount"></div>
-<div class="breadcrumb"><a href="dashboard-worker.html">Home</a><span class="sep">/</span><span class="current" data-i18n="nav_myapplications">My Applications</span></div>
+<div class="breadcrumb"><a href="dashboard-worker.html" data-i18n="nav_dashboard">Home</a><span class="sep">/</span><span class="current" data-i18n="nav_myapplications">My Applications</span></div>
 <div class="page">
 <div class="page-head">
 <div><div class="page-title" data-i18n="title_myapplications">My Applications</div><div class="page-sub" data-i18n="sub_myapplications">Jobs you've applied to, and their status</div></div>
@@ -24,8 +24,8 @@
 <div class="panel">
 <table class="data-table">
 <thead><tr>
-<th data-i18n="ttl_Job Title*">Job</th><th>Contractor</th><th data-i18n="ttl_City*">Location</th>
-<th data-i18n="ttl_Wage (₹)">Wage</th><th>Applied</th><th>Status</th><th></th>
+<th data-i18n="ttl_Job Title*">Job</th><th data-i18n="ttl_Contractor">Contractor</th><th data-i18n="ttl_Location">Location</th>
+<th data-i18n="ttl_Wage (₹)">Wage</th><th data-i18n="ttl_Applied">Applied</th><th data-i18n="ttl_Status">Status</th><th></th>
 </tr></thead>
 <tbody id="appsBody"></tbody>
 </table>
@@ -67,7 +67,7 @@
   document.getElementById("appsBody").addEventListener("click", async (e) => {
     const btn = e.target.closest("button[data-id]");
     if(!btn) return;
-    if(!confirm("Withdraw this application?")) return;
+    if(!confirm(t("ttl_Withdraw this application?"))) return;
     btn.disabled = true;
     try{ await Contralabos.marketplace.applications.withdraw(btn.dataset.id); await load(); }
     catch(err){ alert(err.message || t("ttl_Unable to submit application.")); btn.disabled = false; }

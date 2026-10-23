@@ -169,7 +169,8 @@ const Shell = {
         <span class="b-name">CONTRALABOS</span>
       </div>`;
     groups.forEach(g => {
-      html += `<div class="nav-group-title">${g.group}</div><ul class="nav-list">`;
+      const groupLabel = g.group === "Labour Marketplace" ? `<span data-i18n="ttl_Labour Marketplace">${t("ttl_Labour Marketplace")}</span>` : g.group;
+      html += `<div class="nav-group-title">${groupLabel}</div><ul class="nav-list">`;
       g.items.forEach(([key,label,href]) => {
         const active = activePage === key ? "active" : "";
         const i18nKey = "nav_" + key;

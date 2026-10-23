@@ -16,16 +16,16 @@
 <div id="sidebar-mount"></div>
 <div class="main-col">
 <div id="topnav-mount"></div>
-<div class="breadcrumb"><a href="dashboard.html">Home</a><span class="sep">/</span><span class="current" data-i18n="nav_applications">Applications</span></div>
+<div class="breadcrumb"><a href="dashboard.html" data-i18n="nav_dashboard">Home</a><span class="sep">/</span><span class="current" data-i18n="nav_applications">Applications</span></div>
 <div class="page">
 <div class="page-head">
 <div><div class="page-title" data-i18n="title_applications">Applications</div><div class="page-sub" data-i18n="sub_applications">Workers who've applied to your job postings</div></div>
 </div>
 <div class="panel">
 <div class="table-toolbar">
-<select id="fJob"><option value="">All Jobs</option></select>
+<select id="fJob"><option value="" data-i18n="ttl_All Jobs">All Jobs</option></select>
 <select id="fStatus">
-<option value="">All Statuses</option>
+<option value="" data-i18n="ttl_All Statuses">All Statuses</option>
 <option data-i18n="ttl_Pending Review" value="pending">Pending</option>
 <option data-i18n="ttl_Shortlisted" value="shortlisted">Shortlisted</option>
 <option data-i18n="ttl_Hired" value="hired">Hired</option>
@@ -34,8 +34,8 @@
 </div>
 <table class="data-table">
 <thead><tr>
-<th>Worker</th><th data-i18n="ttl_Job Title*">Job</th><th data-i18n="ttl_Application Message">Message</th>
-<th>Status</th><th></th>
+<th data-i18n="ttl_Worker">Worker</th><th data-i18n="ttl_Job Title*">Job</th><th data-i18n="ttl_Application Message">Message</th>
+<th data-i18n="ttl_Status">Status</th><th></th>
 </tr></thead>
 <tbody id="appsBody"></tbody>
 </table>
@@ -88,7 +88,7 @@
     try{
       if(act === "shortlist") await Contralabos.marketplace.applications.shortlist(id);
       if(act === "accept"){
-        if(!confirm("Hire this worker for this job?")) { btn.disabled = false; return; }
+        if(!confirm(t("ttl_Hire this worker for this job?"))) { btn.disabled = false; return; }
         await Contralabos.marketplace.applications.accept(id);
       }
       if(act === "reject") await Contralabos.marketplace.applications.reject(id);
